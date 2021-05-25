@@ -7,6 +7,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.serialization.ClassResolvers;
+import io.netty.handler.codec.serialization.ObjectDecoder;
+import io.netty.handler.codec.serialization.ObjectEncoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
@@ -16,7 +19,7 @@ public class Network {
     private SocketChannel channel;
 
 
-    public Network(){
+    public Network() {
         Thread t = new Thread(() -> {
             NioEventLoopGroup workerGroup = new NioEventLoopGroup();
             try {
@@ -27,7 +30,12 @@ public class Network {
                             @Override
                             protected void initChannel(SocketChannel socketChannel) throws Exception {
                                 channel = socketChannel;
-                                socketChannel.pipeline().addLast(new StringDecoder(), new StringEncoder(), new ClientHandler());
+                                socketChannel.pipeline().addLast(
+                                        new StringDecoder(),
+                                        new StringEncoder(),
+                                        new ClientHandler());
+//                                        new ObjectEncoder(),
+//                                        new ObjectDecoder(ClassResolvers.cacheDisabled(null)));
                             }
                         });
                 ChannelFuture future = b.connect(HOST, PORT).sync();

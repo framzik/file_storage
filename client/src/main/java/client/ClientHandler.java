@@ -1,5 +1,6 @@
 package client;
 
+import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
@@ -26,13 +27,22 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
         if (msg.startsWith("/root: ")) {
             String[] commands = msg.split(" ");
-            List<FileInfo> fileInfoList = new ArrayList<>();
-            for (int i = 2; i < commands.length; i++) {
-                fileInfoList.add(new FileInfo(Paths.get(commands[i])));
-            }
             channels.put(userName, commands[1]);
-            files.put(userName, fileInfoList);
         }
+        if(msg.startsWith("/file_nfo ")){
+           String jsonString= msg.substring("/file_nfo ".length());
+           getFileInfos(jsonString);
+        }
+    }
+
+    private List<FileInfo> getFileInfos(String jsonString) {
+        Gson g = new Gson();
+        String[] fileInfos = jsonString.split("$$");
+        for (int i =0; i < fileInfos.length; i++) {
+            FileInfo fileInfo = g.fromJson(fileInfos[i].replace("$$",""), FileInfo.class);
+            System.out.println(fileInfo);
+        }
+        return null;
     }
 
     @Override

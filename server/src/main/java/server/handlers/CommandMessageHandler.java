@@ -3,12 +3,14 @@ package server.handlers;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
+import server.FileInfo;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
@@ -23,19 +25,23 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-            System.out.println("Client connected: " + ctx.channel());
-            channels.add((SocketChannel) ctx.channel());
+        System.out.println("Client connected: " + ctx.channel());
+        channels.add((SocketChannel) ctx.channel());
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
         System.out.println("Message from client: " + msg);
-        if( msg.startsWith(END)){
+        if (msg.startsWith(END)) {
             ctx.close();
-        }else if(msg.startsWith(AUTH)){
+        } else if (msg.startsWith(AUTH)) {
             Path rootPath = Path.of("cloud", userName);
             createDirectory(ctx, rootPath);
-            ctx.writeAndFlush("/root: " + rootPath + " " + Files.list(rootPath).collect(Collectors.toList()));
+            List<FileInfo> fileInfoList = Files.list(rootPath)
+                    .map(FileInfo::new)
+                    .collect(Collectors.toList());
+            ctx.writeAndFlush("/root: " + rootPath);
+            ctx.writeAndFlush("/file_nfo " + fileInfoList);
         }
     }
 
