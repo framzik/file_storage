@@ -75,6 +75,11 @@ public class FileInfo implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("filename:%s,type:%s,size:%d,lastModified:%s",filename,type,size,lastModified);
+        return "FileInfo{" +
+                "filename='" + filename + '\'' +
+                ", type=" + type +
+                ", size=" + size +
+                ", lastModified=" + lastModified +
+                '}';
     }
 }

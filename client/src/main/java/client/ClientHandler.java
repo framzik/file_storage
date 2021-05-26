@@ -4,13 +4,12 @@ import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import static command.Commands.AUTH;
+import static command.Commands.*;
 
 
 public class ClientHandler extends SimpleChannelInboundHandler<String> {
@@ -25,24 +24,29 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        if (msg.startsWith("/root: ")) {
+        if (msg.startsWith(ROOT)) {
             String[] commands = msg.split(" ");
             channels.put(userName, commands[1]);
-        }
-        if(msg.startsWith("/file_nfo ")){
-           String jsonString= msg.substring("/file_nfo ".length());
-           getFileInfos(jsonString);
+            String jsonString = msg.substring(ROOT.length()).substring(commands[1].length()).substring(FILE_INFO.length()).trim();
+            files.put(userName, getFileInfos(jsonString));
+//        } else if (msg.startsWith("/file_info ")) {
+//            String jsonString = msg.substring("/file_info ".length());
+//            files.put(userName, getFileInfos(jsonString));
         }
     }
 
     private List<FileInfo> getFileInfos(String jsonString) {
         Gson g = new Gson();
-        String[] fileInfos = jsonString.split("$$");
-        for (int i =0; i < fileInfos.length; i++) {
-            FileInfo fileInfo = g.fromJson(fileInfos[i].replace("$$",""), FileInfo.class);
-            System.out.println(fileInfo);
+        List<FileInfo> fileInfoList = new CopyOnWriteArrayList<>();
+        String[] fileInfos = jsonString.split("/");
+        FileInfo fileInfo;
+        for (int i = 0; i < fileInfos.length - 1; i++) {
+            fileInfo = g.fromJson(fileInfos[i].substring(1).trim(), FileInfo.class);
+//            fileInfo.setFilename("s"+fileInfo.getFilename());
+            fileInfoList.add(fileInfo);
         }
-        return null;
+        System.out.println(fileInfoList);
+        return fileInfoList;
     }
 
     @Override

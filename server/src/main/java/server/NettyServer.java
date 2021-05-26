@@ -34,9 +34,6 @@ public class NettyServer {
                                     new StringEncoder(),
                                     new StringDecoder(),
                                     new CommandMessageHandler()
-//                                    new ObjectEncoder(),
-//                                    new ObjectDecoder(ClassResolvers.cacheDisabled(null)),
-//                                    new FileInfoHandler()
                             );
                         }
                     });

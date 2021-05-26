@@ -5,6 +5,8 @@ public class Commands {
     public static final String HOST = "localhost";
     public static final String END = "/exit ";
     public static final String AUTH = "/auth ";
+    public static final String FILE_INFO = "/file_info ";
+    public static final String ROOT = "/root: ";
 
 
 

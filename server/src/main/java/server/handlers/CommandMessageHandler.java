@@ -1,21 +1,19 @@
 package server.handlers;
 
+import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import server.FileInfo;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
-import static command.Commands.AUTH;
-import static command.Commands.END;
+import static command.Commands.*;
 
 public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
     String userName = "framzik";
@@ -37,12 +35,18 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
         } else if (msg.startsWith(AUTH)) {
             Path rootPath = Path.of("cloud", userName);
             createDirectory(ctx, rootPath);
-            List<FileInfo> fileInfoList = Files.list(rootPath)
-                    .map(FileInfo::new)
-                    .collect(Collectors.toList());
-            ctx.writeAndFlush("/root: " + rootPath);
-            ctx.writeAndFlush("/file_nfo " + fileInfoList);
+            ctx.writeAndFlush(ROOT + rootPath+" "+ FILE_INFO + getFileInfoList(rootPath));
+//            ctx.writeAndFlush(FILE_INFO + getFileInfoList(rootPath));
         }
+    }
+
+    private List<String> getFileInfoList(Path rootPath) throws IOException {
+        Gson g = new Gson();
+        return Files.list(rootPath)
+                .map(FileInfo::new)
+                .map(g::toJson)
+                .map(f -> f + "/")
+                .collect(Collectors.toList());
     }
 
     private void createDirectory(ChannelHandlerContext ctx, Path defaultRoot) {

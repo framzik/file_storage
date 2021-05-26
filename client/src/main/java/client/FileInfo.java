@@ -71,4 +71,14 @@ public class FileInfo {
             throw new RuntimeException("Unable to create file info from path");
         }
     }
+
+    @Override
+    public String toString() {
+        return "FileInfo{" +
+                "filename='" + filename + '\'' +
+                ", type=" + type +
+                ", size=" + size +
+                ", lastModified=" + lastModified +
+                '}';
+    }
 }

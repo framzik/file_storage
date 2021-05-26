@@ -9,14 +9,12 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 
-import java.io.IOException;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -105,16 +103,14 @@ public class LeftPanelController implements Initializable {
 
     public void updateList(Path path) {
         try {
-            if (path.equals(Paths.get(root)) || !(path.equals(Paths.get("cloud", userName))
-                    || path.getParent().startsWith(Paths.get("cloud", userName).toAbsolutePath()))) {
-                pathField.setText(path.normalize().toAbsolutePath().toString());
-            } else pathField.setText(path.toString());
-
+            String correctPath = getCorrectPath(path);
+            pathField.setText(correctPath);
             filesTable.getItems().clear();
-            if(files.get(userName)==null){
+            if (!correctPath.startsWith("cloud") || files.get(userName)==null) {
                 filesTable.getItems().addAll(Files.list(path).map(FileInfo::new).collect(Collectors.toList()));
-            }else
-            filesTable.getItems().addAll(files.get(userName));
+            } else {
+                filesTable.getItems().addAll(files.get(userName));
+            }
             filesTable.sort();
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.WARNING, "По какой-то причине не удалось обновить список файлов", ButtonType.OK);
@@ -124,14 +120,15 @@ public class LeftPanelController implements Initializable {
 
     public void btnPathUpAction(ActionEvent actionEvent) {
         Path upperPath = Paths.get(pathField.getText()).getParent();
-        if (upperPath != null) {
+        if (upperPath != null && !upperPath.startsWith("cloud")) {
             updateList(upperPath);
         }
     }
 
-    public void selectDiskAction(ActionEvent actionEvent) {
-        ComboBox<String> element = (ComboBox<String>) actionEvent.getSource();
-        updateList(Paths.get(element.getSelectionModel().getSelectedItem()));
+    private String getCorrectPath(Path path) {
+        if (path.equals(Paths.get(root)) || !(path.equals(Paths.get("cloud", userName)))) {
+            return path.normalize().toAbsolutePath().toString();
+        } else return path.toString();
     }
 
     public String getSelectedFilename() {
