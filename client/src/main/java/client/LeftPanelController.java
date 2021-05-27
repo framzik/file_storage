@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -100,7 +101,7 @@ public class LeftPanelController implements Initializable {
 
     public void updateDisksBox() {
         disksBox.getItems().add("ser:");
-        disksBox.getSelectionModel().select(disksBox.getItems().size()-1);
+        disksBox.getSelectionModel().select(disksBox.getItems().size() - 1);
     }
 
     public void updateList(Path path) {
@@ -108,10 +109,15 @@ public class LeftPanelController implements Initializable {
             String correctPath = getCorrectPath(path);
             pathField.setText(correctPath);
             filesTable.getItems().clear();
-            if (!correctPath.startsWith(CLOUD) ) {
+            if (!correctPath.startsWith(CLOUD)) {
                 filesTable.getItems().addAll(Files.list(path).map(FileInfo::new).collect(Collectors.toList()));
             } else {
-                Thread.sleep(3000);
+                while (true) {
+                    List<FileInfo> fileInfoList = files.get(userName);
+                    if (fileInfoList == null) {
+
+                    }else break;
+                }
                 filesTable.getItems().addAll(files.get(userName));
                 files.remove(userName);
             }
