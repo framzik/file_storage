@@ -36,7 +36,8 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
             Path rootPath = Path.of("cloud", userName);
             createDirectory(ctx, rootPath);
             ctx.writeAndFlush(ROOT + rootPath+" "+ FILE_INFO + getFileInfoList(rootPath));
-//            ctx.writeAndFlush(FILE_INFO + getFileInfoList(rootPath));
+        } else if ("ls".equals(msg)) {
+
         }
     }
 

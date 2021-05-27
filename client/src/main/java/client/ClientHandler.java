@@ -29,9 +29,6 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
             channels.put(userName, commands[1]);
             String jsonString = msg.substring(ROOT.length()).substring(commands[1].length()).substring(FILE_INFO.length()).trim();
             files.put(userName, getFileInfos(jsonString));
-//        } else if (msg.startsWith("/file_info ")) {
-//            String jsonString = msg.substring("/file_info ".length());
-//            files.put(userName, getFileInfos(jsonString));
         }
     }
 
@@ -54,5 +51,4 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
         ctx.close();
         cause.printStackTrace();
     }
-
 }

@@ -126,7 +126,7 @@ public class LeftPanelController implements Initializable {
     }
 
     private String getCorrectPath(Path path) {
-        if (path.equals(Paths.get(root)) || !(path.equals(Paths.get("cloud", userName)))) {
+        if (path.equals(Paths.get(root)) || !(path.toString().startsWith("cloud"))) {
             return path.normalize().toAbsolutePath().toString();
         } else return path.toString();
     }
