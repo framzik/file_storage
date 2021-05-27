@@ -19,14 +19,11 @@ import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 import static client.ClientHandler.*;
+import static client.Controller.userName;
+import static command.Commands.CLOUD;
 
 public class LeftPanelController implements Initializable {
     public static String root = ".";
-    String userName = "framzik";
-    @FXML
-    public Button btnConnectCloud;
-
-    private Network network;
 
     @FXML
     TableView<FileInfo> filesTable;
@@ -98,7 +95,12 @@ public class LeftPanelController implements Initializable {
             }
         });
 
-        updateList(Paths.get("."));
+        updateList(Paths.get(root));
+    }
+
+    public void updateDisksBox() {
+        disksBox.getItems().add("ser:");
+        disksBox.getSelectionModel().select(disksBox.getItems().size()-1);
     }
 
     public void updateList(Path path) {
@@ -106,10 +108,12 @@ public class LeftPanelController implements Initializable {
             String correctPath = getCorrectPath(path);
             pathField.setText(correctPath);
             filesTable.getItems().clear();
-            if (!correctPath.startsWith("cloud") || files.get(userName)==null) {
+            if (!correctPath.startsWith(CLOUD) ) {
                 filesTable.getItems().addAll(Files.list(path).map(FileInfo::new).collect(Collectors.toList()));
             } else {
+                Thread.sleep(3000);
                 filesTable.getItems().addAll(files.get(userName));
+                files.remove(userName);
             }
             filesTable.sort();
         } catch (Exception e) {
@@ -120,13 +124,13 @@ public class LeftPanelController implements Initializable {
 
     public void btnPathUpAction(ActionEvent actionEvent) {
         Path upperPath = Paths.get(pathField.getText()).getParent();
-        if (upperPath != null && !upperPath.startsWith("cloud")) {
+        if (upperPath != null && !upperPath.startsWith(CLOUD)) {
             updateList(upperPath);
         }
     }
 
     private String getCorrectPath(Path path) {
-        if (path.equals(Paths.get(root)) || !(path.toString().startsWith("cloud"))) {
+        if (path.equals(Paths.get(root)) || !(path.toString().startsWith(CLOUD))) {
             return path.normalize().toAbsolutePath().toString();
         } else return path.toString();
     }
@@ -138,25 +142,17 @@ public class LeftPanelController implements Initializable {
         return filesTable.getSelectionModel().getSelectedItem().getFilename();
     }
 
-    public String getCurrentPath() {
-        return pathField.getText();
+    public void selectDiskAction(ActionEvent actionEvent) {
+        ComboBox<String> element = (ComboBox<String>) actionEvent.getSource();
+        if (!element.getSelectionModel().getSelectedItem().equals("ser:")) {
+            updateList(Paths.get(element.getSelectionModel().getSelectedItem()));
+        } else {
+            updateList(Paths.get(CLOUD, userName));
+        }
     }
 
-    public void btnCloudConnect(ActionEvent actionEvent) {
-        network = new Network();
-        btnConnectCloud.setVisible(false);
-        btnConnectCloud.setMaxWidth(0);
-        String path = ClientHandler.channels.get(userName);
-        while (true) {
-            if (path == null) {
-                path = channels.get(userName);
-            } else {
-                Alert alertCon = new Alert(Alert.AlertType.INFORMATION, "Connected!", ButtonType.CLOSE);
-                alertCon.showAndWait();
-                break;
-            }
-        }
-        updateList(Paths.get(path));
+    public String getCurrentPath() {
+        return pathField.getText();
     }
 
 }

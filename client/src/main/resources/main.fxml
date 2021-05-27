@@ -18,6 +18,9 @@
     </HBox>
 
     <HBox spacing="5">
+        <Button fx:id="btnConnectCloud" maxWidth="150" focusTraversable="false" text="Подключиться к облаку" HBox.hgrow="ALWAYS" onAction="#btnCloudConnect"/>
+        <Button maxWidth="Infinity" focusTraversable="false" text="Создать папку" HBox.hgrow="ALWAYS" onAction="#btnCreateDir"/>
+        <TextField fx:id="dirName"  HBox.hgrow="ALWAYS"/>
         <Button maxWidth="Infinity" focusTraversable="false" text="Копировать файл" HBox.hgrow="ALWAYS" onAction="#copyBtnAction"/>
         <Button maxWidth="Infinity" focusTraversable="false" text="Переместить файл" HBox.hgrow="ALWAYS"/>
         <Button maxWidth="Infinity" focusTraversable="false" text="Удалить файл" HBox.hgrow="ALWAYS"/>

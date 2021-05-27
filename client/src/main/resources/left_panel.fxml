@@ -7,7 +7,7 @@
 <VBox alignment="center" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/10.0.2-internal"
       fx:controller="client.LeftPanelController">
     <HBox>
-        <Button fx:id="btnConnectCloud" maxWidth="150" focusTraversable="false" text="Подключиться к облаку" HBox.hgrow="ALWAYS" onAction="#btnCloudConnect"/>
+        <ComboBox fx:id="disksBox" onAction="#selectDiskAction"/>
         <TextField fx:id="pathField" editable="false" HBox.hgrow="ALWAYS"/>
         <Button text="Вверх" onAction="#btnPathUpAction"/>
     </HBox>

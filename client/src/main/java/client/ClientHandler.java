@@ -3,7 +3,6 @@ package client;
 import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,7 +13,6 @@ import static command.Commands.*;
 
 public class ClientHandler extends SimpleChannelInboundHandler<String> {
     private String userName = "framzik";
-    public static final Map<String, String> channels = new ConcurrentHashMap<>();
     public static final Map<String, List<FileInfo>> files = new ConcurrentHashMap<>();
 
     @Override
@@ -24,9 +22,9 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+        System.out.println(msg);
         if (msg.startsWith(ROOT)) {
             String[] commands = msg.split(" ");
-            channels.put(userName, commands[1]);
             String jsonString = msg.substring(ROOT.length()).substring(commands[1].length()).substring(FILE_INFO.length()).trim();
             files.put(userName, getFileInfos(jsonString));
         }
@@ -42,7 +40,6 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
 //            fileInfo.setFilename("s"+fileInfo.getFilename());
             fileInfoList.add(fileInfo);
         }
-        System.out.println(fileInfoList);
         return fileInfoList;
     }
 

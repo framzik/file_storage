@@ -36,14 +36,25 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
             Path rootPath = Path.of("cloud", userName);
             createDirectory(ctx, rootPath);
             ctx.writeAndFlush(ROOT + rootPath+" "+ FILE_INFO + getFileInfoList(rootPath));
-        } else if ("ls".equals(msg)) {
-
+        } else if (msg.startsWith(TOUCH)) {
+            String[] commands = msg.split(" ");
+            String currPath = commands[1];
+            String dirName = commands[2];
+            Path newPath = Path.of(currPath, dirName);
+            if (!Files.exists(newPath)) {
+                try {
+                    Files.createDirectory(newPath);
+                } catch (IOException e) {
+                    ctx.writeAndFlush("Cannot create dir, change name");
+                }
+                ctx.writeAndFlush(TOUCH + OK + getFileInfoList(newPath));
+            }
         }
     }
 
-    private List<String> getFileInfoList(Path rootPath) throws IOException {
+    private List<String> getFileInfoList(Path dstPath) throws IOException {
         Gson g = new Gson();
-        return Files.list(rootPath)
+        return Files.list(dstPath)
                 .map(FileInfo::new)
                 .map(g::toJson)
                 .map(f -> f + "/")
@@ -64,7 +75,6 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         System.out.println("Client disconnected: " + ctx.channel());
-
     }
 
 }
