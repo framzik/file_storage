@@ -1,4 +1,11 @@
-Maven, git, Netty, Gson
+Maven, git, Netty, Gson, JavaFX
+
+client : взят за основу с вебинара на GB.ru(т.к. уже реализованна функциональность навигации по ПК, тоесть правая часть терминала )
+
+client: java 1.8
+
+server: java 11
+
 Планируется сделать:
 
 Authenticate
