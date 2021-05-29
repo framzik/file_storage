@@ -1,5 +1,6 @@
 package client;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
-import static client.ClientHandler.*;
+import static client.Controller.fileInfoList;
 import static client.Controller.userName;
 import static command.Commands.CLOUD;
 
@@ -101,7 +102,7 @@ public class LeftPanelController implements Initializable {
 
     public void updateDisksBox() {
         disksBox.getItems().add("ser:");
-        disksBox.getSelectionModel().select(disksBox.getItems().size() - 1);
+        disksBox.getSelectionModel().select(disksBox.getItems().size()-1);
     }
 
     public void updateList(Path path) {
@@ -112,20 +113,21 @@ public class LeftPanelController implements Initializable {
             if (!correctPath.startsWith(CLOUD)) {
                 filesTable.getItems().addAll(Files.list(path).map(FileInfo::new).collect(Collectors.toList()));
             } else {
-                while (true) {
-                    List<FileInfo> fileInfoList = files.get(userName);
-                    if (fileInfoList == null) {
-
-                    }else break;
-                }
-                filesTable.getItems().addAll(files.get(userName));
-                files.remove(userName);
+                filesTable.getItems().addAll(fileInfoList);
             }
             filesTable.sort();
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.WARNING, "По какой-то причине не удалось обновить список файлов", ButtonType.OK);
             alert.showAndWait();
         }
+    }
+
+    public void updateList(Path path, List<FileInfo> fileInfoList) {
+        String correctPath = getCorrectPath(path);
+        pathField.setText(correctPath);
+        filesTable.getItems().clear();
+        filesTable.getItems().addAll(fileInfoList);
+        filesTable.sort();
     }
 
     public void btnPathUpAction(ActionEvent actionEvent) {
@@ -153,7 +155,7 @@ public class LeftPanelController implements Initializable {
         if (!element.getSelectionModel().getSelectedItem().equals("ser:")) {
             updateList(Paths.get(element.getSelectionModel().getSelectedItem()));
         } else {
-            updateList(Paths.get(CLOUD, userName));
+            updateList(Paths.get(CLOUD, userName),fileInfoList);
         }
     }
 

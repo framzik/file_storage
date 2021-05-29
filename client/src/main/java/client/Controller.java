@@ -3,6 +3,7 @@ package client;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -10,26 +11,42 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.ResourceBundle;
 
 import static command.Commands.END;
 import static command.Commands.TOUCH;
 
 
-public class Controller {
+public class Controller implements Initializable {
     @FXML
     public TextField dirName;
+    @FXML
+    public Button btnCreateDir;
     @FXML
     VBox leftPanel, rightPanel;
     @FXML
     public Button btnConnectCloud;
 
-    LeftPanelController leftPC = null;
-    RightPanelController rightPC = null;
+
+    private LeftPanelController leftPC = null;
+    private RightPanelController rightPC = null;
     private Network network;
+    public static List<FileInfo> fileInfoList;
+    protected static boolean isAnswerGet = true;
     public static String userName = "framzik";
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        leftPC = (LeftPanelController) leftPanel.getProperties().get("ctrl");
+        rightPC = (RightPanelController) rightPanel.getProperties().get("ctrl");
+        btnCreateDir.setVisible(false);
+        dirName.setVisible(false);
+    }
 
     public void copyBtnAction(ActionEvent actionEvent) {
         leftPC = (LeftPanelController) leftPanel.getProperties().get("ctrl");
@@ -74,21 +91,39 @@ public class Controller {
     }
 
     public void btnCloudConnect(ActionEvent actionEvent) {
-        leftPC = (LeftPanelController) leftPanel.getProperties().get("ctrl");
-        rightPC = (RightPanelController) rightPanel.getProperties().get("ctrl");
-        network = new Network();
+        network = new Network(arg -> {
+            while ((fileInfoList = (List<FileInfo>) arg[0]).isEmpty()) {
+                fileInfoList = (List<FileInfo>) arg[0];
+            }
+        });
+        while (fileInfoList == null) {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        leftPC.updateDisksBox();
         btnConnectCloud.setVisible(false);
         btnConnectCloud.setMaxWidth(0);
-        Alert alertCon = new Alert(Alert.AlertType.INFORMATION, "Connected!", ButtonType.CLOSE);
-        alertCon.showAndWait();
-        leftPC.updateDisksBox();
+        btnCreateDir.setVisible(true);
+        dirName.setVisible(true);
+        fileInfoList.clear();
     }
 
     public void btnCreateDir(ActionEvent actionEvent) {
         network.sendMessage(TOUCH + leftPC.pathField.getText() + " " + dirName.getText());
         dirName.setText("");
-        leftPC.updateList(Paths.get(leftPC.pathField.getText()));
 
-        System.out.println(TOUCH + leftPC.pathField.getText() + " " + dirName.getText());
+        while (fileInfoList.isEmpty()) {
+            network.setOnMessageReceivedAnswer(arg -> {
+                while ((fileInfoList = (List<FileInfo>) arg[0]).isEmpty()) {
+                    fileInfoList = (List<FileInfo>) arg[0];
+                }
+            });
+        }
+        leftPC.updateList(Paths.get(leftPC.pathField.getText()), fileInfoList);
+        fileInfoList.clear();
     }
 }
