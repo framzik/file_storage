@@ -6,19 +6,11 @@ client: java 1.8
 
 server: java 11
 
-Планируется сделать:
-
-Authenticate
-
-DB
+Сделал:
 
 Remove
 
 Create (dir)
-
-Upload
-
-Download
 
 View size (file)
 
@@ -26,5 +18,17 @@ View creating and updating date
 
 Sort ( name | size | date )
 
-Выполненно пока только подключение, создание директории
-(не доработанно корректное отображение после создания)
+Переход внутрь папки
+
+Кнопка "Вверх"
+
+Планируется сделать:
+
+Authenticate
+
+DB
+
+Copy(Upload | Download)
+
+
+

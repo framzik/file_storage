@@ -1,6 +1,5 @@
 package client;
 
-import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
@@ -20,13 +19,12 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
-import static client.Controller.fileInfoList;
-import static client.Controller.userName;
-import static command.Commands.CLOUD;
+import static client.Controller.*;
+import static command.Commands.*;
 
 public class LeftPanelController implements Initializable {
     public static String root = ".";
-
+    private Network network;
     @FXML
     TableView<FileInfo> filesTable;
 
@@ -85,24 +83,32 @@ public class LeftPanelController implements Initializable {
             disksBox.getSelectionModel().select(0);
         }
 
-        filesTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                if (event.getClickCount() == 2) {
-                    Path path = Paths.get(pathField.getText()).resolve(filesTable.getSelectionModel().getSelectedItem().getFilename());
-                    if (Files.isDirectory(path)) {
-                        updateList(path);
-                    }
-                }
-            }
-        });
+//        filesTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
+//            @Override
+//            public void handle(MouseEvent event) {
+//                if (event.getClickCount() == 2) {
+//                    Path path = Paths.get(pathField.getText()).resolve(filesTable.getSelectionModel().getSelectedItem().getFilename());
+//                    if (!Paths.get(pathField.getText()).startsWith(CLOUD)) {
+//                        if (Files.isDirectory(path)) {
+//                            updateList(path);
+//                        }
+//                    } else if (Files.isDirectory(path)) {
+//                        network.sendMessage(CD + pathField.getText() + " " + filesTable.getSelectionModel().getSelectedItem().getFilename());
+//                        fillingFileInfoList();
+//                        updateList(Paths.get(pathField.getText(), filesTable.getSelectionModel().getSelectedItem().getFilename()), fileInfoList);
+//                        fileInfoList.clear();
+//                    }
+//
+//                }
+//            }
+//        });
 
         updateList(Paths.get(root));
     }
 
     public void updateDisksBox() {
         disksBox.getItems().add("ser:");
-        disksBox.getSelectionModel().select(disksBox.getItems().size()-1);
+        disksBox.getSelectionModel().select(disksBox.getItems().size() - 1);
     }
 
     public void updateList(Path path) {
@@ -134,6 +140,19 @@ public class LeftPanelController implements Initializable {
         Path upperPath = Paths.get(pathField.getText()).getParent();
         if (upperPath != null && !upperPath.startsWith(CLOUD)) {
             updateList(upperPath);
+        } else {
+            if (network != null) {
+                network.sendMessage(CD + UP + pathField.getText());
+                while (fileInfoList.isEmpty()) {
+                    network.setOnMessageReceivedAnswer(arg -> {
+                        while ((fileInfoList = (List<FileInfo>) arg[0]).isEmpty()) {
+                            fileInfoList = (List<FileInfo>) arg[0];
+                        }
+                    });
+                }
+                updateList(Paths.get(getCorrectPath(upperPath)), fileInfoList);
+                fileInfoList.clear();
+            }
         }
     }
 
@@ -155,7 +174,7 @@ public class LeftPanelController implements Initializable {
         if (!element.getSelectionModel().getSelectedItem().equals("ser:")) {
             updateList(Paths.get(element.getSelectionModel().getSelectedItem()));
         } else {
-            updateList(Paths.get(CLOUD, userName),fileInfoList);
+            updateList(Paths.get(CLOUD, userName), fileInfoList);
         }
     }
 
@@ -163,4 +182,7 @@ public class LeftPanelController implements Initializable {
         return pathField.getText();
     }
 
+    public void setNetwork(Network network) {
+        this.network = network;
+    }
 }

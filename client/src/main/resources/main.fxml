@@ -13,19 +13,24 @@
     </MenuBar>
 
     <HBox VBox.vgrow="ALWAYS">
-        <fx:include fx:id="leftPanel" source="left_panel.fxml" HBox.hgrow="ALWAYS" />
-        <fx:include fx:id="rightPanel" source="right_panel.fxml" HBox.hgrow="ALWAYS" />
+        <fx:include fx:id="leftPanel" source="left_panel.fxml" HBox.hgrow="ALWAYS"/>
+        <fx:include fx:id="rightPanel" source="right_panel.fxml" HBox.hgrow="ALWAYS"/>
     </HBox>
 
     <HBox spacing="5">
-        <Button fx:id="btnConnectCloud" maxWidth="150" focusTraversable="false" text="Подключиться к облаку" HBox.hgrow="ALWAYS" onAction="#btnCloudConnect"/>
-        <Button maxWidth="Infinity" fx:id="btnCreateDir" focusTraversable="false" text="Создать папку" HBox.hgrow="ALWAYS" onAction="#btnCreateDir"/>
-        <TextField fx:id="dirName"  HBox.hgrow="ALWAYS"/>
-        <Button maxWidth="Infinity" focusTraversable="false" text="Копировать файл" HBox.hgrow="ALWAYS" onAction="#copyBtnAction"/>
+        <Button fx:id="btnConnectCloud" maxWidth="150" focusTraversable="false" text="Подключиться к облаку"
+                HBox.hgrow="ALWAYS" onAction="#btnCloudConnect"/>
+        <Button fx:id="btnCreateDir" maxWidth="Infinity" focusTraversable="false" text="Создать папку"
+                HBox.hgrow="ALWAYS" onAction="#btnCreateDir"/>
+        <TextField fx:id="dirName" HBox.hgrow="ALWAYS"/>
+        <Button maxWidth="Infinity" focusTraversable="false" text="Копировать файл" HBox.hgrow="ALWAYS"
+                onAction="#copyBtnAction"/>
         <Button maxWidth="Infinity" focusTraversable="false" text="Переместить файл" HBox.hgrow="ALWAYS"/>
-        <Button maxWidth="Infinity" focusTraversable="false" text="Удалить файл" HBox.hgrow="ALWAYS"/>
+        <Button fx:id="btnRemove" maxWidth="Infinity" focusTraversable="false" text="Удалить" HBox.hgrow="ALWAYS"
+                onAction="#btnRemove"/>
 
-        <Button maxWidth="Infinity" focusTraversable="false" text="Выход из программы" HBox.hgrow="ALWAYS" onAction="#btnExitAction"/>
+        <Button maxWidth="Infinity" focusTraversable="false" text="Выход из программы" HBox.hgrow="ALWAYS"
+                onAction="#btnExitAction"/>
         <padding>
             <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
         </padding>

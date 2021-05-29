@@ -8,7 +8,7 @@ import java.time.ZoneOffset;
 
 public class FileInfo {
     public enum FileType {
-        FILE("F"), DIRECTORY("D");
+        FILE("F"), DIRECTORY("D"), EMPTY("E");
 
         private String name;
 
@@ -70,6 +70,13 @@ public class FileInfo {
         } catch (IOException e) {
             throw new RuntimeException("Unable to create file info from path");
         }
+    }
+
+    public FileInfo(String filename, FileType type, long size, LocalDateTime lastModified) {
+        this.filename = filename;
+        this.type = type;
+        this.size = size;
+        this.lastModified = lastModified;
     }
 
     @Override

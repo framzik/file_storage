@@ -41,13 +41,24 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
             ctx.writeAndFlush(ROOT + rootPath + " " + FILE_INFO + getFileInfoList(rootPath));
         } else if (msg.startsWith(TOUCH)) {
             createDir(ctx, msg);
-        } else if (msg.startsWith(RM)) {
+        } else if (msg.startsWith(REMOVE)) {
             removeFile(ctx, msg);
         } else if (msg.startsWith(CD)) {
-            Path path = Path.of(msg.split(" ")[1]).getParent();
-            ctx.writeAndFlush(CD + path + FILE_INFO + getFileInfoList(path));
+            if (msg.substring(CD.length()).startsWith(UP)) {
+                String currPath = msg.split(" ")[2];
+                Path parentPath = Path.of(currPath).getParent();
+                root = Path.of("cloud", userName);
+                if (Path.of(currPath).equals(root)) {
+                    ctx.writeAndFlush(CD + Path.of(currPath) + " " + getFileInfoList(Path.of(currPath)));
+                } else
+                    ctx.writeAndFlush(CD + parentPath + " " + getFileInfoList(parentPath));
+            } else {
+                String currPath = msg.split(" ")[1];
+                String fileName = msg.split(" ")[2];
+                Path newPath = Path.of(currPath, fileName);
+                ctx.writeAndFlush(CD + newPath + " " + getFileInfoList(newPath));
+            }
         }
-
     }
 
     private void removeFile(ChannelHandlerContext ctx, String msg) {
@@ -74,7 +85,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
                         }
                     });
                 }
-                ctx.writeAndFlush(RM + OK + newPath.getFileName() + " removed" + FILE_INFO + getFileInfoList(newPath));
+                ctx.writeAndFlush(REMOVE + OK + getFileInfoList(Path.of(currPath)));
             }
         } catch (IOException e) {
             ctx.writeAndFlush(WRONG + newPath.getFileName() + " can't delete");

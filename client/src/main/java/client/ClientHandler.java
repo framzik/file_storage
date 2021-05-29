@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -31,18 +32,18 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
                 String rootPath = commands[1];
                 String jsonString = msg.substring(ROOT.length()).substring(rootPath.length()).substring(FILE_INFO.length()).trim();
                 onMessageReceivedAnswer.answer(getFileInfos(jsonString));
-            }
-            if (msg.startsWith(TOUCH + OK)) {
+            } else if (msg.startsWith(TOUCH + OK)) {
                 String jsonString = msg.substring((TOUCH + OK).length()).trim();
+                onMessageReceivedAnswer.answer(getFileInfos(jsonString));
+            } else if (msg.startsWith(REMOVE + OK)) {
+                String jsonString = msg.substring((REMOVE + OK).length()).trim();
+                onMessageReceivedAnswer.answer(getFileInfos(jsonString));
+            }else if (msg.startsWith(CD)) {
+                String newPath = msg.split(" ")[1];
+                String jsonString = msg.substring((CD).length()).substring(newPath.length()).trim();
                 onMessageReceivedAnswer.answer(getFileInfos(jsonString));
             }
         }
-//        System.out.println(msg);
-//        if (msg.startsWith(ROOT)) {
-//            String[] commands = msg.split(" ");
-//            String jsonString = msg.substring(ROOT.length()).substring(commands[1].length()).substring(FILE_INFO.length()).trim();
-//            files.put(userName, getFileInfos(jsonString));
-//        }
     }
 
     private List<FileInfo> getFileInfos(String jsonString) {
@@ -52,8 +53,11 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
         FileInfo fileInfo;
         for (int i = 0; i < fileInfos.length - 1; i++) {
             fileInfo = g.fromJson(fileInfos[i].substring(1).trim(), FileInfo.class);
-            fileInfo.setFilename("s" + fileInfo.getFilename());
+//            fileInfo.setFilename("s" + fileInfo.getFilename());
             fileInfoList.add(fileInfo);
+        }
+        if(fileInfoList.isEmpty()){
+            fileInfoList.add(new FileInfo("Directory is Empty", FileInfo.FileType.EMPTY,0, LocalDateTime.now()));
         }
         return fileInfoList;
     }

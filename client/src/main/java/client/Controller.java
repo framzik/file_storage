@@ -2,12 +2,14 @@ package client;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
@@ -18,8 +20,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static command.Commands.END;
-import static command.Commands.TOUCH;
+import static command.Commands.*;
 
 
 public class Controller implements Initializable {
@@ -27,6 +28,8 @@ public class Controller implements Initializable {
     public TextField dirName;
     @FXML
     public Button btnCreateDir;
+    @FXML
+    public Button btnRemove;
     @FXML
     VBox leftPanel, rightPanel;
     @FXML
@@ -37,7 +40,6 @@ public class Controller implements Initializable {
     private RightPanelController rightPC = null;
     private Network network;
     public static List<FileInfo> fileInfoList;
-    protected static boolean isAnswerGet = true;
     public static String userName = "framzik";
 
     @Override
@@ -46,6 +48,25 @@ public class Controller implements Initializable {
         rightPC = (RightPanelController) rightPanel.getProperties().get("ctrl");
         btnCreateDir.setVisible(false);
         dirName.setVisible(false);
+
+        leftPC.filesTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                if (event.getClickCount() == 2) {
+                    Path path = Paths.get(leftPC.pathField.getText()).resolve(leftPC.filesTable.getSelectionModel().getSelectedItem().getFilename());
+                    if (!Paths.get(leftPC.pathField.getText()).startsWith(CLOUD)) {
+                        if (Files.isDirectory(path)) {
+                            leftPC.updateList(path);
+                        }
+                    } else if (Files.isDirectory(path)) {
+                        network.sendMessage(CD + leftPC.pathField.getText() + " " + leftPC.filesTable.getSelectionModel().getSelectedItem().getFilename());
+                        fillingFileInfoList();
+                        leftPC.updateList(Paths.get(leftPC.pathField.getText(), leftPC.filesTable.getSelectionModel().getSelectedItem().getFilename()), fileInfoList);
+                        fileInfoList.clear();
+                    }
+                }
+            }
+        });
     }
 
     public void copyBtnAction(ActionEvent actionEvent) {
@@ -90,6 +111,11 @@ public class Controller implements Initializable {
         Platform.exit();
     }
 
+    /**
+     * Подключаемся к серверу
+     *
+     * @param actionEvent
+     */
     public void btnCloudConnect(ActionEvent actionEvent) {
         network = new Network(arg -> {
             while ((fileInfoList = (List<FileInfo>) arg[0]).isEmpty()) {
@@ -103,7 +129,7 @@ public class Controller implements Initializable {
                 e.printStackTrace();
             }
         }
-
+        leftPC.setNetwork(network);
         leftPC.updateDisksBox();
         btnConnectCloud.setVisible(false);
         btnConnectCloud.setMaxWidth(0);
@@ -112,10 +138,35 @@ public class Controller implements Initializable {
         fileInfoList.clear();
     }
 
+    /**
+     * Создаем новую папку на сервере
+     *
+     * @param actionEvent
+     */
     public void btnCreateDir(ActionEvent actionEvent) {
         network.sendMessage(TOUCH + leftPC.pathField.getText() + " " + dirName.getText());
         dirName.setText("");
+        fillingFileInfoList();
+        leftPC.updateList(Paths.get(leftPC.pathField.getText()), fileInfoList);
+        fileInfoList.clear();
+    }
 
+    public void btnRemove(ActionEvent actionEvent) {
+        if (leftPC.getSelectedFilename() == null) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Ни один файл не был выбран на сервере", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
+        network.sendMessage(REMOVE + leftPC.pathField.getText() + " " + leftPC.getSelectedFilename());
+        fillingFileInfoList();
+        leftPC.updateList(Paths.get(leftPC.pathField.getText()), fileInfoList);
+        fileInfoList.clear();
+    }
+
+    /**
+     * Останавливаем поток, и ждем пока не обработается информация с сервера = заполнится @ fileInfoList
+     */
+    private void fillingFileInfoList() {
         while (fileInfoList.isEmpty()) {
             network.setOnMessageReceivedAnswer(arg -> {
                 while ((fileInfoList = (List<FileInfo>) arg[0]).isEmpty()) {
@@ -123,7 +174,10 @@ public class Controller implements Initializable {
                 }
             });
         }
-        leftPC.updateList(Paths.get(leftPC.pathField.getText()), fileInfoList);
-        fileInfoList.clear();
     }
+
+    public Network getNetwork() {
+        return network;
+    }
+
 }

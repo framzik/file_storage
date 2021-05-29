@@ -12,8 +12,9 @@ public class Commands {
     public static final String FILE_INFO = "/file_info ";
     public static final String ROOT = "/root: ";
     public static final String TOUCH = "/touch ";
-    public static final String RM = "/rm ";
+    public static final String REMOVE = "/rm ";
     public static final String CD = "/cd ";
+    public static final String UP = "/.. ";
 
 
 
