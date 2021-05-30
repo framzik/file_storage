@@ -140,6 +140,8 @@ public class LeftPanelController implements Initializable {
         Path upperPath = Paths.get(pathField.getText()).getParent();
         if (upperPath != null && !upperPath.startsWith(CLOUD)) {
             updateList(upperPath);
+        } else if (pathField.getText().equals(Paths.get(CLOUD, userName).toString())) {
+            return;
         } else {
             if (network != null) {
                 network.sendMessage(CD + UP + pathField.getText());
@@ -176,10 +178,6 @@ public class LeftPanelController implements Initializable {
         } else {
             updateList(Paths.get(CLOUD, userName), fileInfoList);
         }
-    }
-
-    public String getCurrentPath() {
-        return pathField.getText();
     }
 
     public void setNetwork(Network network) {

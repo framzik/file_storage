@@ -14,6 +14,7 @@ import javafx.scene.layout.VBox;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +40,7 @@ public class Controller implements Initializable {
     private LeftPanelController leftPC = null;
     private RightPanelController rightPC = null;
     private Network network;
+    public static String fromFile;
     public static List<FileInfo> fileInfoList;
     public static String userName = "framzik";
 
@@ -80,23 +82,45 @@ public class Controller implements Initializable {
         Path srcPath = null, dstPath = null;
 
         if (leftPC.getSelectedFilename() != null) {
-            srcPath = Paths.get(leftPC.getCurrentPath(), leftPC.getSelectedFilename());
+            srcPath = Paths.get(leftPC.pathField.getText(), leftPC.getSelectedFilename());
             dstPath = Paths.get(rightPC.getCurrentPath()).resolve(srcPath.getFileName().toString());
-            try {
-                Files.copy(srcPath, dstPath);
-                rightPC.updateList(Paths.get(rightPC.getCurrentPath()));
-            } catch (IOException e) {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать указанный файл", ButtonType.OK);
-                alert.showAndWait();
+            if (!leftPC.pathField.getText().startsWith(CLOUD)) {
+                try {
+                    Files.copy(srcPath, dstPath);
+                    rightPC.updateList(Paths.get(rightPC.getCurrentPath()));
+                } catch (IOException e) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать указанный файл", ButtonType.OK);
+                    alert.showAndWait();
+                }
+            } else {
+                network.sendMessage(DOWNLOAD + srcPath);
+                fillingFileInfoList();
+                if (Files.exists(dstPath)) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать, файл с таким именем уже существует", ButtonType.OK);
+                    alert.showAndWait();
+                    fromFile = "";
+                    fileInfoList.clear();
+                } else {
+                    try {
+                        Files.write(dstPath, fromFile.getBytes(StandardCharsets.UTF_8));
+                        rightPC.updateList(Paths.get(rightPC.getCurrentPath()));
+                    } catch (IOException e) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Что-то пошло не так с загрузкой файла. Повторите попытку.", ButtonType.OK);
+                        alert.showAndWait();
+                    } finally {
+                        fromFile = "";
+                        fileInfoList.clear();
+                    }
+                }
             }
         }
         if (rightPC.getSelectedFilename() != null) {
 
             srcPath = Paths.get(rightPC.getCurrentPath(), rightPC.getSelectedFilename());
-            dstPath = Paths.get(leftPC.getCurrentPath()).resolve(srcPath.getFileName().toString());
+            dstPath = Paths.get(leftPC.pathField.getText()).resolve(srcPath.getFileName().toString());
             try {
                 Files.copy(srcPath, dstPath);
-                leftPC.updateList(Paths.get(leftPC.getCurrentPath()));
+                leftPC.updateList(Paths.get(leftPC.pathField.getText()));
             } catch (IOException e) {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать указанный файл", ButtonType.OK);
                 alert.showAndWait();
@@ -144,6 +168,11 @@ public class Controller implements Initializable {
      * @param actionEvent
      */
     public void btnCreateDir(ActionEvent actionEvent) {
+        if (dirName.getText().trim().length() == 0) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Введите имя", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
         network.sendMessage(TOUCH + leftPC.pathField.getText() + " " + dirName.getText());
         dirName.setText("");
         fillingFileInfoList();

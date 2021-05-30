@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static client.Controller.fromFile;
 import static command.Commands.*;
 
 
@@ -38,10 +39,21 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
             } else if (msg.startsWith(REMOVE + OK)) {
                 String jsonString = msg.substring((REMOVE + OK).length()).trim();
                 onMessageReceivedAnswer.answer(getFileInfos(jsonString));
-            }else if (msg.startsWith(CD)) {
+            } else if (msg.startsWith(CD)) {
                 String newPath = msg.split(" ")[1];
                 String jsonString = msg.substring((CD).length()).substring(newPath.length()).trim();
                 onMessageReceivedAnswer.answer(getFileInfos(jsonString));
+            } else if (msg.startsWith(DOWNLOAD)) {
+                String response = msg.substring(DOWNLOAD.length());
+                if (!response.equals("[]")) {
+                    String[] byteValues = response.substring(1, response.length() - 1).split(",");
+                    byte[] bytes = new byte[byteValues.length];
+                    for (int i = 0, len = bytes.length; i < len; i++) {
+                        bytes[i] = Byte.parseByte(byteValues[i].trim());
+                    }
+                    fromFile = new String(bytes);
+                } else fromFile = " ";
+                onMessageReceivedAnswer.answer(getFileInfos(""));
             }
         }
     }
@@ -53,11 +65,10 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
         FileInfo fileInfo;
         for (int i = 0; i < fileInfos.length - 1; i++) {
             fileInfo = g.fromJson(fileInfos[i].substring(1).trim(), FileInfo.class);
-//            fileInfo.setFilename("s" + fileInfo.getFilename());
             fileInfoList.add(fileInfo);
         }
-        if(fileInfoList.isEmpty()){
-            fileInfoList.add(new FileInfo("Directory is Empty", FileInfo.FileType.EMPTY,0, LocalDateTime.now()));
+        if (fileInfoList.isEmpty()) {
+            fileInfoList.add(new FileInfo("Directory is Empty", FileInfo.FileType.EMPTY, 0, LocalDateTime.now()));
         }
         return fileInfoList;
     }

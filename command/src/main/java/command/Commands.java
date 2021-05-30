@@ -15,10 +15,9 @@ public class Commands {
     public static final String REMOVE = "/rm ";
     public static final String CD = "/cd ";
     public static final String UP = "/.. ";
+    public static final String DOWNLOAD = "/download ";
 
 
-
-    public static final String COPY_COMMAND = "/copy [src] [target]";
     public static final String LS = "/ls ";
     public static final String CAT_COMMAND = "/cat [filename]";
     public static final String CHANGE_NICKNAME = "/nick";

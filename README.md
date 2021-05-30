@@ -22,6 +22,8 @@ Sort ( name | size | date )
 
 Кнопка "Вверх"
 
+Download(надо доработать)
+
 Планируется сделать:
 
 Authenticate

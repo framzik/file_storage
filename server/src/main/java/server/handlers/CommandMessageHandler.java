@@ -12,6 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -44,20 +46,48 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
         } else if (msg.startsWith(REMOVE)) {
             removeFile(ctx, msg);
         } else if (msg.startsWith(CD)) {
-            if (msg.substring(CD.length()).startsWith(UP)) {
-                String currPath = msg.split(" ")[2];
-                Path parentPath = Path.of(currPath).getParent();
-                root = Path.of("cloud", userName);
-                if (Path.of(currPath).equals(root)) {
-                    ctx.writeAndFlush(CD + Path.of(currPath) + " " + getFileInfoList(Path.of(currPath)));
-                } else
-                    ctx.writeAndFlush(CD + parentPath + " " + getFileInfoList(parentPath));
-            } else {
-                String currPath = msg.split(" ")[1];
-                String fileName = msg.split(" ")[2];
-                Path newPath = Path.of(currPath, fileName);
-                ctx.writeAndFlush(CD + newPath + " " + getFileInfoList(newPath));
+            navigation(ctx, msg);
+        } else if (msg.startsWith(DOWNLOAD)) {
+            String[] commands = msg.split(" ");
+            Path srcPath = Path.of(commands[1]);
+            if (Files.exists(srcPath)) {
+                if (!Files.isDirectory(srcPath)) {
+                    sendFile(ctx, srcPath);
+                } else {
+                    ctx.writeAndFlush(WRONG + "This is Dir");
+                }
             }
+        }
+    }
+
+    private void sendFile(ChannelHandlerContext ctx, Path file) throws IOException {
+        byte[] readAllBytes = Files.readAllBytes(file);
+        ctx.writeAndFlush(DOWNLOAD + Arrays.toString(readAllBytes));
+
+
+//        StringBuilder fileString = new StringBuilder();
+//        Files.readAllLines(file).forEach(s -> {
+//            System.out.println(s);
+//            fileString.append(s).append(System.lineSeparator());
+//        });
+        System.out.println(DOWNLOAD + Arrays.toString(readAllBytes));
+//        ctx.writeAndFlush(DOWNLOAD + fileString);
+    }
+
+    private void navigation(ChannelHandlerContext ctx, String msg) throws IOException {
+        if (msg.substring(CD.length()).startsWith(UP)) {
+            String currPath = msg.split(" ")[2];
+            Path parentPath = Path.of(currPath).getParent();
+            root = Path.of("cloud", userName);
+            if (Path.of(currPath).equals(root)) {
+                ctx.writeAndFlush(CD + Path.of(currPath) + " " + getFileInfoList(Path.of(currPath)));
+            } else
+                ctx.writeAndFlush(CD + parentPath + " " + getFileInfoList(parentPath));
+        } else {
+            String currPath = msg.split(" ")[1];
+            String fileName = msg.split(" ")[2];
+            Path newPath = Path.of(currPath, fileName);
+            ctx.writeAndFlush(CD + newPath + " " + getFileInfoList(newPath));
         }
     }
 
@@ -108,12 +138,18 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
     }
 
     private List<String> getFileInfoList(Path dstPath) throws IOException {
-        Gson g = new Gson();
-        return Files.list(dstPath)
-                .map(FileInfo::new)
-                .map(g::toJson)
-                .map(f -> f + "/")
-                .collect(Collectors.toList());
+        if (Files.isDirectory(dstPath)) {
+            Gson g = new Gson();
+            return Files.list(dstPath)
+                    .map(FileInfo::new)
+                    .map(g::toJson)
+                    .map(f -> f + "/")
+                    .collect(Collectors.toList());
+        } else {
+            List<String> fileInfoList = new ArrayList<>();
+            fileInfoList.add(new FileInfo(dstPath) + "/");
+            return fileInfoList;
+        }
     }
 
     private void createDirectory(ChannelHandlerContext ctx, Path defaultRoot) {
