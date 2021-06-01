@@ -7,6 +7,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import server.handlers.CommandMessageHandler;
@@ -29,6 +30,7 @@ public class NettyServer {
                             ch.pipeline().addLast(
                                     new StringEncoder(),
                                     new StringDecoder(),
+                                    new ByteArrayEncoder(),
                                     new CommandMessageHandler()
                             );
                         }

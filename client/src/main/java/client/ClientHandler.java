@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -12,9 +13,10 @@ import static client.Controller.fromFile;
 import static command.Commands.*;
 
 
-public class ClientHandler extends SimpleChannelInboundHandler<String> {
+public class ClientHandler extends SimpleChannelInboundHandler<Object> {
     private String userName = "framzik";
     private AnswerFromServer onMessageReceivedAnswer;
+    private byte[] fileBytes= new byte[0];
 
     public ClientHandler(AnswerFromServer onMessageReceivedAnswer) {
         this.onMessageReceivedAnswer = onMessageReceivedAnswer;
@@ -26,34 +28,46 @@ public class ClientHandler extends SimpleChannelInboundHandler<String> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {
         if (onMessageReceivedAnswer != null) {
-            if (msg.startsWith(ROOT)) {
-                String[] commands = msg.split(" ");
-                String rootPath = commands[1];
-                String jsonString = msg.substring(ROOT.length()).substring(rootPath.length()).substring(FILE_INFO.length()).trim();
-                onMessageReceivedAnswer.answer(getFileInfos(jsonString));
-            } else if (msg.startsWith(TOUCH + OK)) {
-                String jsonString = msg.substring((TOUCH + OK).length()).trim();
-                onMessageReceivedAnswer.answer(getFileInfos(jsonString));
-            } else if (msg.startsWith(REMOVE + OK)) {
-                String jsonString = msg.substring((REMOVE + OK).length()).trim();
-                onMessageReceivedAnswer.answer(getFileInfos(jsonString));
-            } else if (msg.startsWith(CD)) {
-                String newPath = msg.split(" ")[1];
-                String jsonString = msg.substring((CD).length()).substring(newPath.length()).trim();
-                onMessageReceivedAnswer.answer(getFileInfos(jsonString));
-            } else if (msg.startsWith(DOWNLOAD)) {
-                String response = msg.substring(DOWNLOAD.length());
-                if (!response.equals("[]")) {
-                    String[] byteValues = response.substring(1, response.length() - 1).split(",");
-                    byte[] bytes = new byte[byteValues.length];
-                    for (int i = 0, len = bytes.length; i < len; i++) {
-                        bytes[i] = Byte.parseByte(byteValues[i].trim());
+            byte[] incomingBytes = (byte[]) obj;
+            String msg = new String(incomingBytes, StandardCharsets.UTF_8);
+            if (msg.startsWith("/")) {
+
+                if (msg.startsWith(ROOT)) {
+                    String[] commands = msg.split(" ");
+                    String rootPath = commands[1];
+                    String jsonString = msg.substring(ROOT.length()).substring(rootPath.length()).substring(FILE_INFO.length()).trim();
+                    onMessageReceivedAnswer.answer(getFileInfos(jsonString));
+                } else if (msg.startsWith(TOUCH + OK)) {
+                    String jsonString = msg.substring((TOUCH + OK).length()).trim();
+                    onMessageReceivedAnswer.answer(getFileInfos(jsonString));
+                } else if (msg.startsWith(REMOVE + OK)) {
+                    String jsonString = msg.substring((REMOVE + OK).length()).trim();
+                    onMessageReceivedAnswer.answer(getFileInfos(jsonString));
+                } else if (msg.startsWith(CD)) {
+                    String newPath = msg.split(" ")[1];
+                    String jsonString = msg.substring((CD).length()).substring(newPath.length()).trim();
+                    onMessageReceivedAnswer.answer(getFileInfos(jsonString));
+                } else if (msg.startsWith(DOWNLOAD)) {
+                    String response = msg.substring(DOWNLOAD.length());
+                    if (!response.equals("[]")) {
+                        fileBytes = new byte[incomingBytes.length - DOWNLOAD.getBytes(StandardCharsets.UTF_8).length];
+                        System.arraycopy(incomingBytes, DOWNLOAD.getBytes(StandardCharsets.UTF_8).length, fileBytes, 0, fileBytes.length);
+//                        fromFile = fileBytes;
+                    } else {
+                        fromFile = " ".getBytes(StandardCharsets.UTF_8);
+                        onMessageReceivedAnswer.answer(getFileInfos(""));
                     }
-                    fromFile = new String(bytes);
-                } else fromFile = " ";
-                onMessageReceivedAnswer.answer(getFileInfos(""));
+                } else if (msg.equals(END_FILE)) {
+                    fromFile = fileBytes;
+                    onMessageReceivedAnswer.answer(getFileInfos(""));
+                }
+            } else {
+                byte[] newFileByte = new byte[fileBytes.length + incomingBytes.length];
+                System.arraycopy(incomingBytes, 0, newFileByte, fileBytes.length, incomingBytes.length);
+                System.arraycopy(fileBytes, 0, newFileByte, 0, fileBytes.length);
+                fileBytes = newFileByte;
             }
         }
     }

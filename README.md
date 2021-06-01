@@ -22,7 +22,7 @@ Sort ( name | size | date )
 
 Кнопка "Вверх"
 
-Download(надо доработать)
+Download
 
 Планируется сделать:
 
@@ -30,7 +30,7 @@ Authenticate
 
 DB
 
-Copy(Upload | Download)
+Upload 
 
 
 

@@ -40,7 +40,7 @@ public class Controller implements Initializable {
     private LeftPanelController leftPC = null;
     private RightPanelController rightPC = null;
     private Network network;
-    public static String fromFile;
+    public static byte[] fromFile;
     public static List<FileInfo> fileInfoList;
     public static String userName = "framzik";
 
@@ -98,17 +98,17 @@ public class Controller implements Initializable {
                 if (Files.exists(dstPath)) {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать, файл с таким именем уже существует", ButtonType.OK);
                     alert.showAndWait();
-                    fromFile = "";
+                    fromFile = " ".getBytes(StandardCharsets.UTF_8);
                     fileInfoList.clear();
                 } else {
                     try {
-                        Files.write(dstPath, fromFile.getBytes(StandardCharsets.UTF_8));
+                        Files.write(dstPath, fromFile);
                         rightPC.updateList(Paths.get(rightPC.getCurrentPath()));
                     } catch (IOException e) {
                         Alert alert = new Alert(Alert.AlertType.ERROR, "Что-то пошло не так с загрузкой файла. Повторите попытку.", ButtonType.OK);
                         alert.showAndWait();
                     } finally {
-                        fromFile = "";
+                        fromFile = " ".getBytes(StandardCharsets.UTF_8);
                         fileInfoList.clear();
                     }
                 }

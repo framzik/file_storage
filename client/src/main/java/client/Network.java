@@ -7,6 +7,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
@@ -32,7 +33,8 @@ public class Network {
                             protected void initChannel(SocketChannel socketChannel) throws Exception {
                                 channel = socketChannel;
                                 socketChannel.pipeline().addLast(
-                                        new StringDecoder(),
+                                        new ByteArrayDecoder(),
+//                                        new StringDecoder(),
                                         new StringEncoder(),
                                         new ClientHandler(onMessageReceivedAnswer));
                             }

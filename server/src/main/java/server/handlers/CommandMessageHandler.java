@@ -7,13 +7,13 @@ import io.netty.channel.socket.SocketChannel;
 import server.FileInfo;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -61,17 +61,20 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
     }
 
     private void sendFile(ChannelHandlerContext ctx, Path file) throws IOException {
-        byte[] readAllBytes = Files.readAllBytes(file);
-        ctx.writeAndFlush(DOWNLOAD + Arrays.toString(readAllBytes));
+        byte[] readFileBytes = Files.readAllBytes(file);
+        byte[] downloadByte = DOWNLOAD.getBytes(StandardCharsets.UTF_8);
+        byte[] msg = new byte[readFileBytes.length + downloadByte.length];
 
-
-//        StringBuilder fileString = new StringBuilder();
-//        Files.readAllLines(file).forEach(s -> {
-//            System.out.println(s);
-//            fileString.append(s).append(System.lineSeparator());
-//        });
-        System.out.println(DOWNLOAD + Arrays.toString(readAllBytes));
-//        ctx.writeAndFlush(DOWNLOAD + fileString);
+        System.arraycopy(downloadByte, 0, msg, 0, downloadByte.length);
+        System.arraycopy(readFileBytes, 0, msg, downloadByte.length, readFileBytes.length);
+        ctx.write(msg);
+        ctx.flush();
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+           e.printStackTrace();
+        }
+        ctx.writeAndFlush(END_FILE.getBytes(StandardCharsets.UTF_8));
     }
 
     private void navigation(ChannelHandlerContext ctx, String msg) throws IOException {

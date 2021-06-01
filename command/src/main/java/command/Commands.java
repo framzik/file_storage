@@ -16,6 +16,7 @@ public class Commands {
     public static final String CD = "/cd ";
     public static final String UP = "/.. ";
     public static final String DOWNLOAD = "/download ";
+    public static final String END_FILE = "/endFile ";
 
 
     public static final String LS = "/ls ";
