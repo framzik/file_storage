@@ -20,11 +20,12 @@ import java.util.stream.Collectors;
 
 import static command.Commands.*;
 
-public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
+public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
     String userName = "framzik";
-
+    private byte[] fileBytes = new byte[0];
+    private byte[] fromFile;
     public static final ConcurrentLinkedQueue<SocketChannel> channels = new ConcurrentLinkedQueue<>();
-    private Path root = Path.of("cloud");
+    private Path root = Path.of(CLOUD);
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -33,30 +34,53 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        System.out.println("Message from client: " + msg);
-        if (msg.startsWith(END)) {
-            ctx.close();
-        } else if (msg.startsWith(AUTH)) {
-            Path rootPath = Path.of("cloud", userName);
-            createDirectory(ctx, rootPath);
-            ctx.writeAndFlush(ROOT + rootPath + " " + FILE_INFO + getFileInfoList(rootPath));
-        } else if (msg.startsWith(TOUCH)) {
-            createDir(ctx, msg);
-        } else if (msg.startsWith(REMOVE)) {
-            removeFile(ctx, msg);
-        } else if (msg.startsWith(CD)) {
-            navigation(ctx, msg);
-        } else if (msg.startsWith(DOWNLOAD)) {
-            String[] commands = msg.split(" ");
-            Path srcPath = Path.of(commands[1]);
-            if (Files.exists(srcPath)) {
-                if (!Files.isDirectory(srcPath)) {
-                    sendFile(ctx, srcPath);
-                } else {
-                    ctx.writeAndFlush(WRONG + "This is Dir");
+    protected void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {
+        byte[] incomingBytes = (byte[]) obj;
+        String msg = new String(incomingBytes, StandardCharsets.UTF_8);
+
+        if (msg.startsWith("/")) {
+            if (msg.startsWith(END)) {
+                ctx.close();
+            } else if (msg.startsWith(AUTH)) {
+                Path rootPath = Path.of(CLOUD, userName);
+                createDirectory(ctx, rootPath);
+                ctx.writeAndFlush((ROOT + rootPath + " " + FILE_INFO + getFileInfoList(rootPath)).getBytes(StandardCharsets.UTF_8));
+            } else if (msg.startsWith(TOUCH)) {
+                createDir(ctx, msg);
+            } else if (msg.startsWith(REMOVE)) {
+                removeFile(ctx, msg);
+            } else if (msg.startsWith(CD)) {
+                navigation(ctx, msg);
+            } else if (msg.startsWith(DOWNLOAD)) {
+                String[] commands = msg.split(" ");
+                Path srcPath = Path.of(commands[1]);
+                if (Files.exists(srcPath)) {
+                    if (!Files.isDirectory(srcPath)) {
+                        sendFile(ctx, srcPath);
+                    } else {
+                        ctx.writeAndFlush((WRONG + "This is Dir").getBytes(StandardCharsets.UTF_8));
+                    }
                 }
+            } else if (msg.startsWith(UPLOAD)) {
+                String response = msg.substring(UPLOAD.length());
+                if (!response.equals("[]")) {
+                    fileBytes = new byte[incomingBytes.length - UPLOAD.getBytes(StandardCharsets.UTF_8).length];
+                    System.arraycopy(incomingBytes, UPLOAD.getBytes(StandardCharsets.UTF_8).length, fileBytes, 0, fileBytes.length);
+                } else {
+                    fromFile = " ".getBytes(StandardCharsets.UTF_8);
+                    ctx.writeAndFlush((UPLOAD + OK).getBytes(StandardCharsets.UTF_8));
+                }
+            } else if (msg.startsWith(END_FILE)) {
+                fromFile = fileBytes;
+                Path dstPath = Path.of(msg.substring(END_FILE.length()));
+                Files.write(dstPath, fromFile);
+                ctx.writeAndFlush((UPLOAD + OK + FILE_INFO + getFileInfoList(dstPath.getParent())).getBytes(StandardCharsets.UTF_8));
             }
+        } else {
+            byte[] newFileByte = new byte[fileBytes.length + incomingBytes.length];
+            System.arraycopy(incomingBytes, 0, newFileByte, fileBytes.length, incomingBytes.length);
+            System.arraycopy(fileBytes, 0, newFileByte, 0, fileBytes.length);
+            fileBytes = newFileByte;
         }
     }
 
@@ -72,7 +96,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
         try {
             Thread.sleep(3000);
         } catch (InterruptedException e) {
-           e.printStackTrace();
+            e.printStackTrace();
         }
         ctx.writeAndFlush(END_FILE.getBytes(StandardCharsets.UTF_8));
     }
@@ -83,14 +107,14 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
             Path parentPath = Path.of(currPath).getParent();
             root = Path.of("cloud", userName);
             if (Path.of(currPath).equals(root)) {
-                ctx.writeAndFlush(CD + Path.of(currPath) + " " + getFileInfoList(Path.of(currPath)));
+                ctx.writeAndFlush((CD + Path.of(currPath) + " " + getFileInfoList(Path.of(currPath))).getBytes(StandardCharsets.UTF_8));
             } else
-                ctx.writeAndFlush(CD + parentPath + " " + getFileInfoList(parentPath));
+                ctx.writeAndFlush((CD + parentPath + " " + getFileInfoList(parentPath)).getBytes(StandardCharsets.UTF_8));
         } else {
             String currPath = msg.split(" ")[1];
             String fileName = msg.split(" ")[2];
             Path newPath = Path.of(currPath, fileName);
-            ctx.writeAndFlush(CD + newPath + " " + getFileInfoList(newPath));
+            ctx.writeAndFlush((CD + newPath + " " + getFileInfoList(newPath)).getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -118,10 +142,10 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
                         }
                     });
                 }
-                ctx.writeAndFlush(REMOVE + OK + getFileInfoList(Path.of(currPath)));
+                ctx.writeAndFlush((REMOVE + OK + getFileInfoList(Path.of(currPath))).getBytes(StandardCharsets.UTF_8));
             }
         } catch (IOException e) {
-            ctx.writeAndFlush(WRONG + newPath.getFileName() + " can't delete");
+            ctx.writeAndFlush((WRONG + newPath.getFileName() + " can't delete").getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -134,10 +158,10 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
             try {
                 Files.createDirectory(newPath);
             } catch (IOException e) {
-                ctx.writeAndFlush(WRONG + "Cannot create dir, change name");
+                ctx.writeAndFlush((WRONG + "Cannot create dir, change name"));
             }
         }
-        ctx.writeAndFlush(TOUCH + OK + getFileInfoList(Path.of(currPath)));
+        ctx.writeAndFlush((TOUCH + OK + getFileInfoList(Path.of(currPath))).getBytes(StandardCharsets.UTF_8));
     }
 
     private List<String> getFileInfoList(Path dstPath) throws IOException {
@@ -161,7 +185,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<String> {
             try {
                 Files.createDirectories(root);
             } catch (IOException e) {
-                ctx.writeAndFlush(WRONG + "can't create dir");
+                ctx.writeAndFlush((WRONG + "can't create dir").getBytes(StandardCharsets.UTF_8));
             }
         }
     }

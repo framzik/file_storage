@@ -4,7 +4,6 @@ public class Commands {
     public static final Integer PORT = 5678;
     public static final String HOST = "localhost";
     public static final String CLOUD = "cloud";
-
     public static final String OK = "/OK ";
     public static final String WRONG = "/wrong ";
     public static final String END = "/exit ";
@@ -16,10 +15,6 @@ public class Commands {
     public static final String CD = "/cd ";
     public static final String UP = "/.. ";
     public static final String DOWNLOAD = "/download ";
+    public static final String UPLOAD = "/upload ";
     public static final String END_FILE = "/endFile ";
-
-
-    public static final String LS = "/ls ";
-    public static final String CAT_COMMAND = "/cat [filename]";
-    public static final String CHANGE_NICKNAME = "/nick";
 }

@@ -24,7 +24,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(AUTH);
+        ctx.writeAndFlush(AUTH.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
@@ -54,7 +54,6 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
                     if (!response.equals("[]")) {
                         fileBytes = new byte[incomingBytes.length - DOWNLOAD.getBytes(StandardCharsets.UTF_8).length];
                         System.arraycopy(incomingBytes, DOWNLOAD.getBytes(StandardCharsets.UTF_8).length, fileBytes, 0, fileBytes.length);
-//                        fromFile = fileBytes;
                     } else {
                         fromFile = " ".getBytes(StandardCharsets.UTF_8);
                         onMessageReceivedAnswer.answer(getFileInfos(""));
@@ -62,6 +61,9 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
                 } else if (msg.equals(END_FILE)) {
                     fromFile = fileBytes;
                     onMessageReceivedAnswer.answer(getFileInfos(""));
+                } else if (msg.startsWith(UPLOAD+OK)){
+                    String jsonString = msg.substring((UPLOAD + OK + FILE_INFO).length()).trim();
+                    onMessageReceivedAnswer.answer(getFileInfos(jsonString));
                 }
             } else {
                 byte[] newFileByte = new byte[fileBytes.length + incomingBytes.length];

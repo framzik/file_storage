@@ -24,13 +24,14 @@ Sort ( name | size | date )
 
 Download
 
+Upload
+
 Планируется сделать:
 
 Authenticate
 
 DB
 
-Upload 
 
 
 

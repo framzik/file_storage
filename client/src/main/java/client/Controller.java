@@ -1,5 +1,6 @@
 package client;
 
+import io.netty.channel.ChannelHandlerContext;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -72,8 +73,7 @@ public class Controller implements Initializable {
     }
 
     public void copyBtnAction(ActionEvent actionEvent) {
-        leftPC = (LeftPanelController) leftPanel.getProperties().get("ctrl");
-        rightPC = (RightPanelController) rightPanel.getProperties().get("ctrl");
+
         if (leftPC.getSelectedFilename() == null && rightPC.getSelectedFilename() == null) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Ни один файл не был выбран", ButtonType.OK);
             alert.showAndWait();
@@ -115,17 +115,49 @@ public class Controller implements Initializable {
             }
         }
         if (rightPC.getSelectedFilename() != null) {
-
             srcPath = Paths.get(rightPC.getCurrentPath(), rightPC.getSelectedFilename());
             dstPath = Paths.get(leftPC.pathField.getText()).resolve(srcPath.getFileName().toString());
-            try {
-                Files.copy(srcPath, dstPath);
-                leftPC.updateList(Paths.get(leftPC.pathField.getText()));
-            } catch (IOException e) {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать указанный файл", ButtonType.OK);
-                alert.showAndWait();
+            if (!leftPC.pathField.getText().startsWith(CLOUD)) {
+                try {
+                    Files.copy(srcPath, dstPath);
+                    leftPC.updateList(Paths.get(leftPC.pathField.getText()));
+                } catch (IOException e) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать указанный файл", ButtonType.OK);
+                    alert.showAndWait();
+                }
+            } else {
+                try {
+                    sendFile(srcPath, dstPath);
+                    fillingFileInfoList();
+                    leftPC.updateList(Paths.get(leftPC.pathField.getText()));
+                } catch (IOException e) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось отправить на сервер указанный файл", ButtonType.OK);
+                    alert.showAndWait();
+                }
             }
         }
+    }
+
+    /**
+     * Передаем байтовое представление файла  и отдельно команду о завершении передачи.
+     *
+     * @param srcFile
+     * @throws IOException
+     */
+    private void sendFile(Path srcFile, Path dstPath) throws IOException {
+        byte[] readFileBytes = Files.readAllBytes(srcFile);
+        byte[] uploadByte = UPLOAD.getBytes(StandardCharsets.UTF_8);
+        byte[] msg = new byte[readFileBytes.length + uploadByte.length];
+
+        System.arraycopy(uploadByte, 0, msg, 0, uploadByte.length);
+        System.arraycopy(readFileBytes, 0, msg, uploadByte.length, readFileBytes.length);
+        network.sendMessage(msg);
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        network.sendMessage((END_FILE + dstPath).getBytes(StandardCharsets.UTF_8));
     }
 
     public void btnExitAction(ActionEvent actionEvent) {
@@ -137,8 +169,6 @@ public class Controller implements Initializable {
 
     /**
      * Подключаемся к серверу
-     *
-     * @param actionEvent
      */
     public void btnCloudConnect(ActionEvent actionEvent) {
         network = new Network(arg -> {
@@ -204,9 +234,4 @@ public class Controller implements Initializable {
             });
         }
     }
-
-    public Network getNetwork() {
-        return network;
-    }
-
 }

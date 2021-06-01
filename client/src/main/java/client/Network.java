@@ -8,8 +8,11 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
+import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
+
+import java.nio.charset.StandardCharsets;
 
 import static command.Commands.*;
 
@@ -34,8 +37,10 @@ public class Network {
                                 channel = socketChannel;
                                 socketChannel.pipeline().addLast(
                                         new ByteArrayDecoder(),
+                                        new ByteArrayEncoder(),
 //                                        new StringDecoder(),
-                                        new StringEncoder(),
+//                                        new StringEncoder(),
+
                                         new ClientHandler(onMessageReceivedAnswer));
                             }
                         });
@@ -55,6 +60,10 @@ public class Network {
     }
 
     public void sendMessage(String str) {
-        channel.writeAndFlush(str);
+        channel.writeAndFlush(str.getBytes(StandardCharsets.UTF_8));
+    }
+    public void sendMessage(byte[] byteFile) {
+
+        channel.writeAndFlush(byteFile);
     }
 }
