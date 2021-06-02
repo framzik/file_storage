@@ -25,7 +25,6 @@
         <TextField fx:id="dirName" HBox.hgrow="ALWAYS"/>
         <Button maxWidth="Infinity" focusTraversable="false" text="Копировать файл" HBox.hgrow="ALWAYS"
                 onAction="#copyBtnAction"/>
-        <Button maxWidth="Infinity" focusTraversable="false" text="Переместить файл" HBox.hgrow="ALWAYS"/>
         <Button fx:id="btnRemove" maxWidth="Infinity" focusTraversable="false" text="Удалить" HBox.hgrow="ALWAYS"
                 onAction="#btnRemove"/>
 

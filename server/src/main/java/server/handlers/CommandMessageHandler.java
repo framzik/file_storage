@@ -8,10 +8,7 @@ import server.FileInfo;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +22,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
     private byte[] fileBytes = new byte[0];
     private byte[] fromFile;
     public static final ConcurrentLinkedQueue<SocketChannel> channels = new ConcurrentLinkedQueue<>();
-    private Path root = Path.of(CLOUD);
+    private Path root = Paths.get(CLOUD);
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -42,7 +39,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
             if (msg.startsWith(END)) {
                 ctx.close();
             } else if (msg.startsWith(AUTH)) {
-                Path rootPath = Path.of(CLOUD, userName);
+                Path rootPath = Paths.get(CLOUD, userName);
                 createDirectory(ctx, rootPath);
                 ctx.writeAndFlush((ROOT + rootPath + " " + FILE_INFO + getFileInfoList(rootPath)).getBytes(StandardCharsets.UTF_8));
             } else if (msg.startsWith(TOUCH)) {
@@ -53,7 +50,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
                 navigation(ctx, msg);
             } else if (msg.startsWith(DOWNLOAD)) {
                 String[] commands = msg.split(" ");
-                Path srcPath = Path.of(commands[1]);
+                Path srcPath = Paths.get(commands[1]);
                 if (Files.exists(srcPath)) {
                     if (!Files.isDirectory(srcPath)) {
                         sendFile(ctx, srcPath);
@@ -72,7 +69,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
                 }
             } else if (msg.startsWith(END_FILE)) {
                 fromFile = fileBytes;
-                Path dstPath = Path.of(msg.substring(END_FILE.length()));
+                Path dstPath = Paths.get(msg.substring(END_FILE.length()));
                 Files.write(dstPath, fromFile);
                 ctx.writeAndFlush((UPLOAD + OK + FILE_INFO + getFileInfoList(dstPath.getParent())).getBytes(StandardCharsets.UTF_8));
             }
@@ -104,16 +101,16 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
     private void navigation(ChannelHandlerContext ctx, String msg) throws IOException {
         if (msg.substring(CD.length()).startsWith(UP)) {
             String currPath = msg.split(" ")[2];
-            Path parentPath = Path.of(currPath).getParent();
-            root = Path.of("cloud", userName);
-            if (Path.of(currPath).equals(root)) {
-                ctx.writeAndFlush((CD + Path.of(currPath) + " " + getFileInfoList(Path.of(currPath))).getBytes(StandardCharsets.UTF_8));
+            Path parentPath = Paths.get(currPath).getParent();
+            root = Paths.get("cloud", userName);
+            if (Paths.get(currPath).equals(root)) {
+                ctx.writeAndFlush((CD + Paths.get(currPath) + " " + getFileInfoList(Paths.get(currPath))).getBytes(StandardCharsets.UTF_8));
             } else
                 ctx.writeAndFlush((CD + parentPath + " " + getFileInfoList(parentPath)).getBytes(StandardCharsets.UTF_8));
         } else {
             String currPath = msg.split(" ")[1];
             String fileName = msg.split(" ")[2];
-            Path newPath = Path.of(currPath, fileName);
+            Path newPath = Paths.get(currPath, fileName);
             ctx.writeAndFlush((CD + newPath + " " + getFileInfoList(newPath)).getBytes(StandardCharsets.UTF_8));
         }
     }
@@ -122,7 +119,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
         String[] commands = msg.split(" ");
         String currPath = commands[1];
         String dirName = commands[2];
-        Path newPath = Path.of(currPath, dirName);
+        Path newPath = Paths.get(currPath, dirName);
         try {
             if (Files.exists(newPath)) {
                 if (!Files.isDirectory(newPath)) {
@@ -142,7 +139,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
                         }
                     });
                 }
-                ctx.writeAndFlush((REMOVE + OK + getFileInfoList(Path.of(currPath))).getBytes(StandardCharsets.UTF_8));
+                ctx.writeAndFlush((REMOVE + OK + getFileInfoList(Paths.get(currPath))).getBytes(StandardCharsets.UTF_8));
             }
         } catch (IOException e) {
             ctx.writeAndFlush((WRONG + newPath.getFileName() + " can't delete").getBytes(StandardCharsets.UTF_8));
@@ -153,7 +150,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
         String[] commands = msg.split(" ");
         String currPath = commands[1];
         String dirName = commands[2];
-        Path newPath = Path.of(currPath, dirName);
+        Path newPath = Paths.get(currPath, dirName);
         if (!Files.exists(newPath)) {
             try {
                 Files.createDirectory(newPath);
@@ -161,7 +158,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
                 ctx.writeAndFlush((WRONG + "Cannot create dir, change name"));
             }
         }
-        ctx.writeAndFlush((TOUCH + OK + getFileInfoList(Path.of(currPath))).getBytes(StandardCharsets.UTF_8));
+        ctx.writeAndFlush((TOUCH + OK + getFileInfoList(Paths.get(currPath))).getBytes(StandardCharsets.UTF_8));
     }
 
     private List<String> getFileInfoList(Path dstPath) throws IOException {
@@ -181,7 +178,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
 
     private void createDirectory(ChannelHandlerContext ctx, Path defaultRoot) {
         if (!Files.exists(defaultRoot)) {
-            root = Path.of("cloud", userName);
+            root = Paths.get("cloud", userName);
             try {
                 Files.createDirectories(root);
             } catch (IOException e) {

@@ -4,7 +4,7 @@ client : взят за основу с вебинара на GB.ru(т.к. уже
 
 client: java 1.8
 
-server: java 11
+server: java 1.8
 
 Сделал:
 
