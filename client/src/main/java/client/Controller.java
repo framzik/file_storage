@@ -201,6 +201,7 @@ public class Controller implements Initializable {
         }
         network.sendMessage(String.format("%s %s %s", AUTH, login.getText().trim(),
                 password.getText().trim()));
+
         fillingFileInfoList();
         if (!wrong.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.ERROR, wrong, ButtonType.OK);
@@ -212,6 +213,8 @@ public class Controller implements Initializable {
         userName = login.getText();
         leftPC.setNetwork(network);
         leftPC.updateDisksBox();
+        fileInfoList.clear();
+
         btnConnectCloud.setVisible(false);
         btnConnectCloud.setMaxWidth(0);
         btnReg.setVisible(false);
@@ -222,7 +225,6 @@ public class Controller implements Initializable {
         password.setVisible(false);
         password.setMaxSize(0, 0);
         dirName.setVisible(true);
-        fileInfoList.clear();
     }
 
     /**
@@ -254,6 +256,7 @@ public class Controller implements Initializable {
             alert.showAndWait();
             return;
         }
+        fileInfoList.clear();
         network.sendMessage(TOUCH + leftPC.pathField.getText() + " " + dirName.getText());
         dirName.setText("");
         fillingFileInfoList();
@@ -272,6 +275,7 @@ public class Controller implements Initializable {
             alert.showAndWait();
             return;
         }
+        fileInfoList.clear();
         network.sendMessage(REMOVE + leftPC.pathField.getText() + " " + leftPC.getSelectedFilename());
         fillingFileInfoList();
         leftPC.updateList(Paths.get(leftPC.pathField.getText()), fileInfoList);
@@ -282,7 +286,12 @@ public class Controller implements Initializable {
      * Останавливаем поток, и ждем пока не обработается информация с сервера = заполнится @ fileInfoList
      */
     private void fillingFileInfoList() {
-        while (fileInfoList.isEmpty()) {
+                while (fileInfoList.isEmpty()) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             network.setOnMessageReceivedAnswer(arg -> {
                 while ((fileInfoList = (List<FileInfo>) arg[0]).isEmpty()) {
                     fileInfoList = (List<FileInfo>) arg[0];

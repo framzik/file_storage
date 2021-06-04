@@ -6,8 +6,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static client.Controller.fromFile;
 import static command.Commands.*;
@@ -96,7 +96,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
      */
     private List<FileInfo> getFileInfos(String jsonString) {
         Gson g = new Gson();
-        List<FileInfo> fileInfoList = new CopyOnWriteArrayList<>();
+        List<FileInfo> fileInfoList = new ArrayList<>();
         String[] fileInfos = jsonString.split("/");
         FileInfo fileInfo;
         for (int i = 0; i < fileInfos.length - 1; i++) {

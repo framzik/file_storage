@@ -73,7 +73,7 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
                 if (newNick != null) {
                     userName = newNick;
                     Path rootPath = Paths.get(CLOUD, userName);
-                    createDirectory(ctx, rootPath);
+                    createMainDir(ctx, rootPath);
                     ctx.writeAndFlush((ROOT + rootPath + " " + FILE_INFO + getFileInfoList(rootPath)).getBytes(StandardCharsets.UTF_8));
                 } else ctx.writeAndFlush((WRONG + "Такой пользователь не найден").getBytes(StandardCharsets.UTF_8));
             } else if (msg.startsWith(TOUCH)) {
@@ -246,13 +246,13 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     /**
-     * Создание директории
+     * Создание главной директории директории
      *
      * @param ctx ChannelHandlerContext
      * @param defaultRoot String
      * @throws IOException
      */
-    private void createDirectory(ChannelHandlerContext ctx, Path defaultRoot) {
+    private void createMainDir(ChannelHandlerContext ctx, Path defaultRoot) {
         if (!Files.exists(defaultRoot)) {
             root = Paths.get("cloud", userName);
             try {
