@@ -14,9 +14,10 @@ import static command.Commands.*;
 
 
 public class ClientHandler extends SimpleChannelInboundHandler<Object> {
-    private String userName = "framzik";
     private AnswerFromServer onMessageReceivedAnswer;
-    private byte[] fileBytes= new byte[0];
+    private byte[] fileBytes = new byte[0];
+    public static boolean isRegistered = false;
+    public static String wrong = "";
 
     public ClientHandler(AnswerFromServer onMessageReceivedAnswer) {
         this.onMessageReceivedAnswer = onMessageReceivedAnswer;
@@ -24,17 +25,31 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(AUTH.getBytes(StandardCharsets.UTF_8));
+        ctx.writeAndFlush(CON.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Метод обрабатывает команды,которые приходят от сервера
+     * @param ctx
+     * @param obj
+     * @throws Exception
+     */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {
         if (onMessageReceivedAnswer != null) {
             byte[] incomingBytes = (byte[]) obj;
             String msg = new String(incomingBytes, StandardCharsets.UTF_8);
             if (msg.startsWith("/")) {
-
-                if (msg.startsWith(ROOT)) {
+                if(msg.startsWith(WRONG)){
+                    wrong = msg.substring(WRONG.length());
+                    onMessageReceivedAnswer.answer(getFileInfos(""));
+                }
+                if (msg.startsWith(CON + OK)) {
+                    onMessageReceivedAnswer.answer(getFileInfos(""));
+                } else if (msg.startsWith(REG + OK)) {
+                    isRegistered = true;
+                    onMessageReceivedAnswer.answer(getFileInfos(""));
+                } else if (msg.startsWith(ROOT)) {
                     String[] commands = msg.split(" ");
                     String rootPath = commands[1];
                     String jsonString = msg.substring(ROOT.length()).substring(rootPath.length()).substring(FILE_INFO.length()).trim();
@@ -61,7 +76,7 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
                 } else if (msg.equals(END_FILE)) {
                     fromFile = fileBytes;
                     onMessageReceivedAnswer.answer(getFileInfos(""));
-                } else if (msg.startsWith(UPLOAD+OK)){
+                } else if (msg.startsWith(UPLOAD + OK)) {
                     String jsonString = msg.substring((UPLOAD + OK + FILE_INFO).length()).trim();
                     onMessageReceivedAnswer.answer(getFileInfos(jsonString));
                 }
@@ -74,6 +89,11 @@ public class ClientHandler extends SimpleChannelInboundHandler<Object> {
         }
     }
 
+    /**
+     * Преобразуем информацию о файлах с сервера в объект FileInfo
+     * @param jsonString строка с сервера с информацией о файлах
+     * @return
+     */
     private List<FileInfo> getFileInfos(String jsonString) {
         Gson g = new Gson();
         List<FileInfo> fileInfoList = new CopyOnWriteArrayList<>();

@@ -1,17 +1,22 @@
 package client;
 
-import io.netty.channel.ChannelHandlerContext;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.io.IOException;
 import java.net.URL;
@@ -22,6 +27,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import static client.ClientHandler.isRegistered;
+import static client.ClientHandler.wrong;
 import static command.Commands.*;
 
 
@@ -33,17 +40,24 @@ public class Controller implements Initializable {
     @FXML
     public Button btnRemove;
     @FXML
+    public Button btnReg;
+    @FXML
+    public TextField login;
+    @FXML
+    public TextField password;
+    @FXML
     VBox leftPanel, rightPanel;
     @FXML
     public Button btnConnectCloud;
 
-
+    private Stage regStage;
+    private RegController regController;
     private LeftPanelController leftPC = null;
     private RightPanelController rightPC = null;
     private Network network;
     public static byte[] fromFile;
     public static List<FileInfo> fileInfoList;
-    public static String userName = "framzik";
+    public static String userName = "";
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -72,6 +86,11 @@ public class Controller implements Initializable {
         });
     }
 
+    /**
+     * Копирование файла с/на сервер
+     *
+     * @param actionEvent
+     */
     public void copyBtnAction(ActionEvent actionEvent) {
 
         if (leftPC.getSelectedFilename() == null && rightPC.getSelectedFilename() == null) {
@@ -160,6 +179,11 @@ public class Controller implements Initializable {
         network.sendMessage((END_FILE + dstPath).getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Выход ( закрытие клиента)
+     *
+     * @param actionEvent
+     */
     public void btnExitAction(ActionEvent actionEvent) {
         if (network != null) {
             network.sendMessage(END);
@@ -171,6 +195,40 @@ public class Controller implements Initializable {
      * Подключаемся к серверу
      */
     public void btnCloudConnect(ActionEvent actionEvent) {
+        if (network == null) {
+            connect();
+            fileInfoList.clear();
+        }
+        network.sendMessage(String.format("%s %s %s", AUTH, login.getText().trim(),
+                password.getText().trim()));
+        fillingFileInfoList();
+        if (!wrong.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, wrong, ButtonType.OK);
+            alert.showAndWait();
+            fileInfoList.clear();
+            wrong = "";
+            return;
+        }
+        userName = login.getText();
+        leftPC.setNetwork(network);
+        leftPC.updateDisksBox();
+        btnConnectCloud.setVisible(false);
+        btnConnectCloud.setMaxWidth(0);
+        btnReg.setVisible(false);
+        btnReg.setMaxWidth(0);
+        btnCreateDir.setVisible(true);
+        login.setVisible(false);
+        login.setMaxSize(0, 0);
+        password.setVisible(false);
+        password.setMaxSize(0, 0);
+        dirName.setVisible(true);
+        fileInfoList.clear();
+    }
+
+    /**
+     * Создание нового подключения( при открытии канала отправляется команда CON )
+     */
+    private void connect() {
         network = new Network(arg -> {
             while ((fileInfoList = (List<FileInfo>) arg[0]).isEmpty()) {
                 fileInfoList = (List<FileInfo>) arg[0];
@@ -183,13 +241,6 @@ public class Controller implements Initializable {
                 e.printStackTrace();
             }
         }
-        leftPC.setNetwork(network);
-        leftPC.updateDisksBox();
-        btnConnectCloud.setVisible(false);
-        btnConnectCloud.setMaxWidth(0);
-        btnCreateDir.setVisible(true);
-        dirName.setVisible(true);
-        fileInfoList.clear();
     }
 
     /**
@@ -210,6 +261,11 @@ public class Controller implements Initializable {
         fileInfoList.clear();
     }
 
+    /**
+     * удаление файла
+     *
+     * @param actionEvent
+     */
     public void btnRemove(ActionEvent actionEvent) {
         if (leftPC.getSelectedFilename() == null) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Ни один файл не был выбран на сервере", ButtonType.OK);
@@ -233,5 +289,67 @@ public class Controller implements Initializable {
                 }
             });
         }
+    }
+
+    /**
+     * Инициализация окна регистрации нового пользователя
+     */
+    private void initRegWindow() {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/reg.fxml"));
+            Parent root = fxmlLoader.load();
+
+            regController = fxmlLoader.getController();
+            regController.setController(this);
+
+            regStage = new Stage();
+            regStage.setTitle("File Cloud registration");
+            regStage.setScene(new Scene(root, 250, 100));
+            regStage.initStyle(StageStyle.UTILITY);
+            regStage.initModality(Modality.APPLICATION_MODAL);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Регистрация нового пользователя
+     *
+     * @param login
+     * @param password
+     * @param nickname
+     */
+    public void registration(String login, String password, String nickname) {
+        network.sendMessage(String.format("%s %s %s %s", REG, login, password, nickname));
+        fillingFileInfoList();
+        if (isRegistered) {
+            isRegistered = false;
+            regStage.close();
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Регистрация пользователя прошла успешно", ButtonType.OK);
+            alert.showAndWait();
+            btnReg.setVisible(false);
+            btnReg.setMaxSize(0, 0);
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR, wrong, ButtonType.OK);
+            wrong = "";
+            alert.showAndWait();
+        }
+    }
+
+    /**
+     * Открытие окна регистрации, установка соединения с сервером
+     *
+     * @param actionEvent
+     */
+    public void btnReg(ActionEvent actionEvent) {
+        if (regStage == null) {
+            initRegWindow();
+        }
+        if (network == null) {
+            connect();
+        }
+        regStage.show();
+        fileInfoList.clear();
     }
 }

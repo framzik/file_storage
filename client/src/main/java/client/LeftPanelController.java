@@ -83,26 +83,6 @@ public class LeftPanelController implements Initializable {
             disksBox.getSelectionModel().select(0);
         }
 
-//        filesTable.setOnMouseClicked(new EventHandler<MouseEvent>() {
-//            @Override
-//            public void handle(MouseEvent event) {
-//                if (event.getClickCount() == 2) {
-//                    Path path = Paths.get(pathField.getText()).resolve(filesTable.getSelectionModel().getSelectedItem().getFilename());
-//                    if (!Paths.get(pathField.getText()).startsWith(CLOUD)) {
-//                        if (Files.isDirectory(path)) {
-//                            updateList(path);
-//                        }
-//                    } else if (Files.isDirectory(path)) {
-//                        network.sendMessage(CD + pathField.getText() + " " + filesTable.getSelectionModel().getSelectedItem().getFilename());
-//                        fillingFileInfoList();
-//                        updateList(Paths.get(pathField.getText(), filesTable.getSelectionModel().getSelectedItem().getFilename()), fileInfoList);
-//                        fileInfoList.clear();
-//                    }
-//
-//                }
-//            }
-//        });
-
         updateList(Paths.get(root));
     }
 

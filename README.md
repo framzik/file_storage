@@ -1,4 +1,4 @@
-Maven, git, Netty, Gson, JavaFX
+Maven, git, Netty, Gson, JavaFX, sqlite
 
 client : взят за основу с вебинара на GB.ru(т.к. уже реализованна функциональность навигации по ПК, тоесть правая часть терминала )
 
@@ -25,8 +25,6 @@ Sort ( name | size | date )
 Download
 
 Upload
-
-Планируется сделать:
 
 Authenticate
 

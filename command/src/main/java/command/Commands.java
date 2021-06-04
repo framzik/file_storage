@@ -4,10 +4,12 @@ public class Commands {
     public static final Integer PORT = 5678;
     public static final String HOST = "localhost";
     public static final String CLOUD = "cloud";
+    public static final String CON = "/connect";
+    public static final String REG = "/reg";
     public static final String OK = "/OK ";
     public static final String WRONG = "/wrong ";
     public static final String END = "/exit ";
-    public static final String AUTH = "/auth ";
+    public static final String AUTH = "/auth";
     public static final String FILE_INFO = "/file_info ";
     public static final String ROOT = "/root: ";
     public static final String TOUCH = "/touch ";

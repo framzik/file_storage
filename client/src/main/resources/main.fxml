@@ -18,7 +18,11 @@
     </HBox>
 
     <HBox spacing="5">
-        <Button fx:id="btnConnectCloud" maxWidth="150" focusTraversable="false" text="Подключиться к облаку"
+        <Button fx:id="btnReg" maxWidth="150" focusTraversable="false" text="Регистрация"
+                HBox.hgrow="ALWAYS" onAction="#btnReg"/>
+        <TextField fx:id="login" HBox.hgrow="ALWAYS" promptText="login"/>
+        <TextField fx:id="password" HBox.hgrow="ALWAYS" promptText="login"/>
+        <Button fx:id="btnConnectCloud" maxWidth="150" focusTraversable="false" text="Подключиться"
                 HBox.hgrow="ALWAYS" onAction="#btnCloudConnect"/>
         <Button fx:id="btnCreateDir" maxWidth="Infinity" focusTraversable="false" text="Создать папку"
                 HBox.hgrow="ALWAYS" onAction="#btnCreateDir"/>

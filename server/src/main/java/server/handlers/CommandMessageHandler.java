@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
+import server.DbAuthService;
 import server.FileInfo;
 
 import java.io.IOException;
@@ -18,11 +19,12 @@ import java.util.stream.Collectors;
 import static command.Commands.*;
 
 public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
-    String userName = "framzik";
+    private String userName = "";
     private byte[] fileBytes = new byte[0];
     private byte[] fromFile;
     public static final ConcurrentLinkedQueue<SocketChannel> channels = new ConcurrentLinkedQueue<>();
     private Path root = Paths.get(CLOUD);
+    private DbAuthService dbService = new DbAuthService();
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -30,18 +32,50 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
         channels.add((SocketChannel) ctx.channel());
     }
 
+    /**
+     * Обработка комманд от клиента
+     *
+     * @param ctx ChannelHandlerContext
+     * @param obj Object
+     * @throws Exception
+     */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {
         byte[] incomingBytes = (byte[]) obj;
         String msg = new String(incomingBytes, StandardCharsets.UTF_8);
 
         if (msg.startsWith("/")) {
-            if (msg.startsWith(END)) {
+            if (msg.startsWith(CON)) {
+                ctx.writeAndFlush((CON + OK).getBytes(StandardCharsets.UTF_8));
+            } else if (msg.startsWith(END)) {
+                dbService.disconnect();
                 ctx.close();
+            } else if (msg.startsWith(REG)) {
+                String[] token = msg.split(" ", 4);
+                if (token.length < 4) {
+                    ctx.writeAndFlush((WRONG + "Введите логин, пароль и никнейм").getBytes(StandardCharsets.UTF_8));
+                    return;
+                }
+                boolean regSuccess = dbService.registration(token[1], token[2], token[3]);
+                if (regSuccess) {
+                    ctx.writeAndFlush((REG + OK).getBytes(StandardCharsets.UTF_8));
+                } else {
+                    ctx.writeAndFlush((WRONG + "Логин занят").getBytes(StandardCharsets.UTF_8));
+                }
             } else if (msg.startsWith(AUTH)) {
-                Path rootPath = Paths.get(CLOUD, userName);
-                createDirectory(ctx, rootPath);
-                ctx.writeAndFlush((ROOT + rootPath + " " + FILE_INFO + getFileInfoList(rootPath)).getBytes(StandardCharsets.UTF_8));
+                String[] token = msg.split(" ", 3);
+                if (token.length < 3) {
+                    ctx.writeAndFlush((WRONG + "Введите логин и пароль").getBytes(StandardCharsets.UTF_8));
+                    return;
+                }
+
+                String newNick = dbService.getNicknameByLoginAndPassword(token[1], token[2]);
+                if (newNick != null) {
+                    userName = newNick;
+                    Path rootPath = Paths.get(CLOUD, userName);
+                    createDirectory(ctx, rootPath);
+                    ctx.writeAndFlush((ROOT + rootPath + " " + FILE_INFO + getFileInfoList(rootPath)).getBytes(StandardCharsets.UTF_8));
+                } else ctx.writeAndFlush((WRONG + "Такой пользователь не найден").getBytes(StandardCharsets.UTF_8));
             } else if (msg.startsWith(TOUCH)) {
                 createDir(ctx, msg);
             } else if (msg.startsWith(REMOVE)) {
@@ -79,8 +113,16 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
             System.arraycopy(fileBytes, 0, newFileByte, 0, fileBytes.length);
             fileBytes = newFileByte;
         }
+
     }
 
+    /**
+     * отправка файла
+     *
+     * @param ctx  ChannelHandlerContext
+     * @param file Path
+     * @throws IOException
+     */
     private void sendFile(ChannelHandlerContext ctx, Path file) throws IOException {
         byte[] readFileBytes = Files.readAllBytes(file);
         byte[] downloadByte = DOWNLOAD.getBytes(StandardCharsets.UTF_8);
@@ -98,6 +140,13 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
         ctx.writeAndFlush(END_FILE.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Навигация
+     *
+     * @param ctx ChannelHandlerContext
+     * @param msg String
+     * @throws IOException
+     */
     private void navigation(ChannelHandlerContext ctx, String msg) throws IOException {
         if (msg.substring(CD.length()).startsWith(UP)) {
             String currPath = msg.split(" ")[2];
@@ -115,6 +164,12 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
         }
     }
 
+    /**
+     * Удаления файла, или всей директории
+     *
+     * @param ctx ChannelHandlerContext
+     * @param msg String
+     */
     private void removeFile(ChannelHandlerContext ctx, String msg) {
         String[] commands = msg.split(" ");
         String currPath = commands[1];
@@ -146,6 +201,13 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
         }
     }
 
+    /**
+     * Создание директории
+     *
+     * @param ctx ChannelHandlerContext
+     * @param msg String
+     * @throws IOException
+     */
     private void createDir(ChannelHandlerContext ctx, String msg) throws IOException {
         String[] commands = msg.split(" ");
         String currPath = commands[1];
@@ -155,12 +217,19 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
             try {
                 Files.createDirectory(newPath);
             } catch (IOException e) {
-                ctx.writeAndFlush((WRONG + "Cannot create dir, change name"));
+                ctx.writeAndFlush((WRONG + "Cannot create dir, change name").getBytes(StandardCharsets.UTF_8));
             }
         }
         ctx.writeAndFlush((TOUCH + OK + getFileInfoList(Paths.get(currPath))).getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Получение строки, содержащей информацию о файлах
+     *
+     * @param dstPath Path
+     * @return List<String>
+     * @throws IOException
+     */
     private List<String> getFileInfoList(Path dstPath) throws IOException {
         if (Files.isDirectory(dstPath)) {
             Gson g = new Gson();
@@ -176,6 +245,13 @@ public class CommandMessageHandler extends SimpleChannelInboundHandler<Object> {
         }
     }
 
+    /**
+     * Создание директории
+     *
+     * @param ctx ChannelHandlerContext
+     * @param defaultRoot String
+     * @throws IOException
+     */
     private void createDirectory(ChannelHandlerContext ctx, Path defaultRoot) {
         if (!Files.exists(defaultRoot)) {
             root = Paths.get("cloud", userName);
